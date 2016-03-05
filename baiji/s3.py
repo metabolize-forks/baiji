@@ -1167,7 +1167,7 @@ class CachedFile(object):
             import __builtin__
             local_path = path.parse(key).path
             if self.mode.is_output and not os.path.exists(os.path.dirname(local_path)):
-                from baiji.util.shuttillib import mkdir_p
+                from baiji.util.shutillib import mkdir_p
                 mkdir_p(os.path.dirname(local_path))
             try:
                 # Use os.open to catch exclusive access to the file, but use open to get a nice, useful file object
