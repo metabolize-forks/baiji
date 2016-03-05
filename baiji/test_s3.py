@@ -160,7 +160,7 @@ class TestAWS(TestAWSBase):
 
     def test_credentials(self):
         from baiji.config import credentials
-        from baiji.util import yamllib as yaml
+        from baiji.util import yaml
         bodylabs_file_path = os.getenv('BODYLABS_CREDENTIAL_FILE', os.path.expanduser('~/.bodylabs'))
         if not os.path.exists(bodylabs_file_path):
             raise unittest.SkipTest("Skipping test_credentials because ~/.bodylabs doesn't exist.")

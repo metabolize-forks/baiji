@@ -30,9 +30,9 @@ class credentials(object):
 
     @cached_property
     def raw_data(self):
-        import yaml
+        from baiji.util import yaml
         from baiji.util.environ import getenvpath
-        from baiji.util import yamllib as yaml
+
         path = getenvpath(self.environment_variable, self.default_path)
         if os.path.isfile(path):
             try:

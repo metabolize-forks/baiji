@@ -45,7 +45,7 @@ class _TransientError(RuntimeError):
 
 def get_transient_error_class():
     try:
-        from guts.service.exceptions import TransientError
+        from guts.service.exceptions import TransientError  # That, precisely, is the point. pylint: disable=no-name-in-module
         return TransientError
     except ImportError:
         return _TransientError

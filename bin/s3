@@ -103,7 +103,7 @@ if __name__ == '__main__':
         try:
             keys = s3.ls(args.key, return_full_urls=True, require_s3_scheme=True, shallow=args.shallow)
             if args.detail:
-                from baiji.util.numerics import sizeof_format_human_readable
+                from baiji.util.console import sizeof_format_human_readable
                 for key in keys:
                     info = s3.info(key)
                     enc = " enc" if info['encrypted'] else "    "
