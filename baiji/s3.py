@@ -558,7 +558,7 @@ class S3Connection(object):
     def conn(self):
         from boto.s3.connection import S3Connection as BotoS3Connection
         from boto.s3.connection import OrdinaryCallingFormat
-        from bodylabs.cloud.aws import credentials
+        from baiji.config import credentials
         if not self._connected:
             self._conn = BotoS3Connection(credentials.key, credentials.secret,
                                           calling_format=OrdinaryCallingFormat(),
@@ -667,7 +667,7 @@ class S3Connection(object):
                     kwargs['force'] = True
 
         if parallel:
-            from bodylabs.util.parallel.multiprocess import parallel_for
+            from baiji.util.parallel import parallel_for
             parallel_for(files_to_copy, MultifileCopyWorker, args=[kwargs], num_processes=12)
         else:
             for file_from, file_to in files_to_copy:
@@ -712,7 +712,7 @@ class S3Connection(object):
         for key_to_delete in keys_to_delete:
             url = "s3://%s%s" % (bucket, key_to_delete)
             if not force:
-                from bodylabs.util.console import confirm
+                from baiji.util.console import confirm
                 if not confirm("Remove %s" % url):
                     continue
             self.rm(url)
@@ -860,7 +860,7 @@ class S3Connection(object):
             import math
             import struct
             import hashlib
-            from bodylabs.util.paths import md5_for_file
+            from baiji.util.md5 import md5_for_file
             file_size = os.path.getsize(k.path)
             if file_size > S3_MAX_UPLOAD_SIZE:
                 n_parts = int(math.ceil(float(file_size) / S3_MAX_UPLOAD_SIZE))
@@ -885,7 +885,7 @@ class S3Connection(object):
         '''
         k = path.parse(key_or_file)
         if k.scheme == 'file':
-            from bodylabs.util.paths import md5_for_file
+            from baiji.util.md5 import md5_for_file
             return md5_for_file(k.path)
         elif k.scheme == 's3':
             res = self._get_etag(k.netloc, k.path)
@@ -1167,7 +1167,7 @@ class CachedFile(object):
             import __builtin__
             local_path = path.parse(key).path
             if self.mode.is_output and not os.path.exists(os.path.dirname(local_path)):
-                from bodylabs.util.paths import mkdir_p
+                from baiji.util.shuttillib import mkdir_p
                 mkdir_p(os.path.dirname(local_path))
             try:
                 # Use os.open to catch exclusive access to the file, but use open to get a nice, useful file object
