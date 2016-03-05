@@ -9,8 +9,10 @@ Features
 
 - An `open`-like context handler which allows using S3 keys and local
   files interchangeably.
-- When reading or writing S3, contents are first written to a temporary local
-  file. When writing, contents are uploaded on close.
+    - When reading S3, contents are first written to a temporary local
+      file.
+    - When writing S3, contents are written to a temporary local file,
+      and uploaded on close.
 - A CLI for listing, copying, syncing, and other common activities.
 - When accessing local files, works without an S3 connection.
 - Tested and production-hardened.
