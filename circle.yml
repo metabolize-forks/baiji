@@ -1,0 +1,25 @@
+# CircleCI config file
+# This section controls settings for CircleCI.
+general:
+  branches:
+    ignore:
+      - /zz.*/  # Don't run tests on deprecated branches.
+
+# This section controls the configuration of the virtual machine that tests will run in
+machine:
+  ruby:
+    version: 2.0.0-p645 # CircleCI defaults to 1.9.3; we use some 2.0 features in dev-tools
+  environment:
+    PYTHONPATH: /usr/local/lib/python2.7/dist-packages
+
+# This section controls the "setup dependencies" step. A failure here will stop further progress.
+dependencies:
+  override: # Rather than using their autodetected steps, use these instead
+    - pip install -r requirements_dev.txt
+
+# This section controls the tests that are run.
+# A failure here will mark us as a failure, but the other lines will still run.
+test:
+  override: # rather than using their autodetected steps, use these instead
+    - rake test
+    - rake lint
