@@ -16,8 +16,9 @@ Features
 --------
 
 - Works without an S3 connection (with local files).
-- Supports OS X, Linux, and Windows.
+- Supports multiprocess parallelism for copying lots of files.
 - Support Python 2.7 and uses boto2.
+- Supports OS X, Linux, and Windows.
 - Tested and production-hardened.
 
 [open]: https://docs.python.org/2/library/functions.html#open
@@ -39,3 +40,10 @@ s3 cp foo.txt s3://example/bar.txt
 s3 cp s3://example/bar.txt s3://another-example/bazinga.txt
 s3 rm s3://example/bar.txt
 ```
+
+
+TODO
+----
+
+1. Decide on the name.
+2. 

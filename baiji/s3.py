@@ -20,7 +20,6 @@ from baiji.util.parallel import ParallelWorker
 
 # FIXME pylint: disable=too-many-lines
 # FIXME pylint: disable=attribute-defined-outside-init
-__version__ = '1.2'
 
 S3_MAX_UPLOAD_SIZE = 1024*1024*1024*5 # 5gb
 
@@ -97,9 +96,6 @@ def md5(*args, **kwargs):
 
 def encrypt_at_rest(*args, **kwargs):
     return S3Connection().encrypt_at_rest(*args, **kwargs)
-
-def audit(*args, **kwargs):
-    return S3Connection().audit(*args, **kwargs)
 
 def mv(*args, **kwargs):
     return S3Connection().mv(*args, **kwargs)

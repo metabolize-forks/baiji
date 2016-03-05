@@ -2,12 +2,8 @@
 
 import argparse
 import sys
+import baiji
 from baiji import s3
-
-# e.g.:
-# s3 cp /Volumes/Work/Data/CAESAR/RawScans/csr0001a.ply s3://bodylabs-test/CAESAR/csr0001a.ply
-# s3 ls s3://bodylabs-test
-# s3 ls s3://bodylabs-test/CAESAR
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Bodylabs AWS S3 tool', epilog="keys are a kind of URL, of the form s3://BUCKET/PATH/TO/FILE")
@@ -27,7 +23,6 @@ if __name__ == '__main__':
     subparsers['buckets'] = parser.subs.add_parser('buckets', help='tools for working with buckets')
     subparsers['version'] = parser.subs.add_parser('version', help='print version and exit')
     subparsers['is'] = parser.subs.add_parser('is', help='check that two files are the same')
-    subparsers['audit'] = parser.subs.add_parser('audit', help='audit that a set of files are encrypted at rest')
     subparsers['ls'].add_argument('key', type=str, help='key to list, of the form s3://BUCKET/PREFIX')
     subparsers['ls'].add_argument('-B', '--uri', action='store_true', help='This option does nothing. It used to return URIs instead of paths, but this is now the default.')
     subparsers['ls'].add_argument('-l', '--detail', action='store_true', help='print details, like `ls -l`')
@@ -82,10 +77,6 @@ if __name__ == '__main__':
 
     subparsers['is'].add_argument('a', type=str, help='key to compare')
     subparsers['is'].add_argument('b', type=str, help='key to compare')
-
-    subparsers['audit'].add_argument('key', type=str, help='bucket and prefix to audit, of the form s3://BUCKET/PREFIX')
-    subparsers['audit'].add_argument('--dry-run', action='store_true', help='just show failures, rather than fixing them')
-    subparsers['audit'].add_argument('-v', '--verbose', action='store_true', help='be talkative')
 
     args = parser.parse_args()
 
@@ -151,13 +142,4 @@ if __name__ == '__main__':
                 print "%s: %s" % (k, v)
         else:
             print "\n".join(s3.list_buckets())
-    if args.command == 'version': print s3.__version__
-    if args.command == 'audit':
-        # we return a code to the shell indicating if we passed the audit
-        if s3.audit(args.key, verbose=args.verbose, dry_run=args.dry_run):
-            print "\nAudit of {} OK".format(args.key)
-            exit(0)
-        else:
-            print "\nAudit of {} FAILED".format(args.key)
-            exit(-1)
-
+    if args.command == 'version': print baiji.__version__
