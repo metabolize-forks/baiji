@@ -1,23 +1,26 @@
 baiji
 =====
 
-High-level Python abstraction layer for Amazon S3.
+High-level Python abstraction layer for Amazon S3:
+
+1. An [`open`][open]-like context handler which allows using S3 keys and
+   local files interchangeably.
+     - When reading S3, contents are first written to a temporary local
+       file.
+     - When writing S3, contents are written to a temporary local file,
+       and uploaded on close.
+2. An `s3` CLI for listing, copying, syncing, and other common activities.
 
 
 Features
 --------
 
-- An `open`-like context handler which allows using S3 keys and local
-  files interchangeably.
-    - When reading S3, contents are first written to a temporary local
-      file.
-    - When writing S3, contents are written to a temporary local file,
-      and uploaded on close.
-- A CLI for listing, copying, syncing, and other common activities.
-- When accessing local files, works without an S3 connection.
-- Tested and production-hardened.
+- Works without an S3 connection (with local files).
 - Supports OS X, Linux, and Windows.
 - Support Python 2.7 and uses boto2.
+- Tested and production-hardened.
+
+[open]: https://docs.python.org/2/library/functions.html#open
 
 
 Examples
