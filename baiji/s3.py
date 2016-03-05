@@ -16,6 +16,7 @@ a file from S3 into a local file.
 import os
 import shutil
 import re
+from baiji.exceptions import InvalidSchemeException, S3Exception, KeyNotFound, KeyExists, get_transient_error_class
 from baiji.util.parallel import ParallelWorker
 
 # FIXME pylint: disable=too-many-lines
@@ -27,37 +28,6 @@ S3_MAX_UPLOAD_SIZE = 1024*1024*1024*5 # 5gb
 # because it should ever change, but for semantic use in code. Remember that os.sep
 # is '/' on MacOS and Linux and '\' on Windows.
 sep = '/'
-
-class InvalidSchemeException(ValueError):
-    pass
-
-class S3Exception(Exception):
-    pass
-
-class KeyNotFound(S3Exception):
-    pass
-
-class KeyExists(S3Exception):
-    pass
-
-class _TransientError(RuntimeError):
-    pass
-
-def get_transient_error_class():
-    try:
-        from guts.service.exceptions import TransientError  # That, precisely, is the point. pylint: disable=no-name-in-module
-        return TransientError
-    except ImportError:
-        return _TransientError
-
-def is_avaliable():
-    from baiji.config import credentials, AWSCredentialsMissing
-    from baiji.util.reachability import internet_reachable
-    try:
-        credentials.key # FIXME pylint: disable=pointless-statement
-        return internet_reachable()
-    except AWSCredentialsMissing:
-        return False
 
 # The following convinence functions create a connection to s3 and execute the command
 

@@ -1,12 +1,7 @@
 import os
+from baiji.exceptions import AWSCredentialsMissing
 from baiji.util.decorators import singleton, cached_property
 
-
-class AWSError(Exception):
-    pass
-
-class AWSCredentialsMissing(AWSError):
-    pass
 
 @singleton
 class credentials(object):
@@ -66,3 +61,11 @@ class credentials(object):
     @property
     def secret(self):
         return self._try(['AWS_SECRET_ACCESS_KEY', 'AWS_SECRET'], 'AWS_SECRET')
+
+def is_avaliable():
+    from baiji.util.reachability import internet_reachable
+    try:
+        credentials.key # FIXME pylint: disable=pointless-statement
+        return internet_reachable()
+    except AWSCredentialsMissing:
+        return False
