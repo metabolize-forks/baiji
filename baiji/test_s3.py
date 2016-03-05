@@ -1,5 +1,10 @@
 # FIXME pylint: disable=protected-access, unnecessary-lambda, unused-variable
-import mock, os, shutil, tempfile, unittest, uuid
+import mock
+import os
+import shutil
+import tempfile
+import unittest
+import uuid
 from baiji import s3
 from baiji.util.testing import create_random_temporary_file
 

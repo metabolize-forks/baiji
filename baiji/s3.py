@@ -13,13 +13,14 @@ example, setting an S3 key's contents from a string or local file, or pulling
 a file from S3 into a local file.
 
 """
+import os
+import shutil
+import re
+from baiji.util.parallel import ParallelWorker
+
 # FIXME pylint: disable=too-many-lines
 # FIXME pylint: disable=attribute-defined-outside-init
 __version__ = '1.2'
-__all__ = ['cp', 'rm', 'ls', 'exists', 'mv', 'get_url', 'list_buckets', 'get_string', 'put_string', 'CachedFile', 'S3Exception']
-
-import os, shutil, re
-from baiji.util.parallel import ParallelWorker
 
 S3_MAX_UPLOAD_SIZE = 1024*1024*1024*5 # 5gb
 
@@ -424,7 +425,8 @@ class S3CopyOperation(object):
 
     def upload(self):
         if self.gzip:
-            import gzip, tempfile
+            import gzip
+            import tempfile
             with tempfile.NamedTemporaryFile() as compressed_src:
                 with open(self.src.path, 'rb') as f:
                     with gzip.open(compressed_src.name, 'wb') as tf:
@@ -777,7 +779,9 @@ class S3Connection(object):
         ))
 
         '''
-        import fnmatch, functools, itertools
+        import fnmatch
+        import functools
+        import itertools
         predicate = functools.partial(fnmatch.fnmatch, pat=prefix + pattern)
         listing = ls(prefix, return_full_urls=True)
         return itertools.ifilter(predicate, listing)
@@ -799,7 +803,7 @@ class S3Connection(object):
             result['last_modified'] = datetime.fromtimestamp(stat.st_mtime)
         elif k.scheme == 's3':
             remote_object = self._lookup(k.netloc, k.path)
-            if remote_object == None:
+            if remote_object is None:
                 raise KeyNotFound("Error getting info on %s: Key doesn't exist" % (key_or_file, ))
             result['size'] = remote_object.size
             result['last_modified'] = datetime.strptime(remote_object.last_modified, "%a, %d %b %Y %H:%M:%S GMT")
@@ -822,7 +826,7 @@ class S3Connection(object):
         if k.scheme == 'file':
             return os.path.exists(k.path)
         elif k.scheme == 's3':
-            return self._lookup(k.netloc, k.path) != None
+            return self._lookup(k.netloc, k.path) is not None
         else:
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)
 
@@ -835,7 +839,7 @@ class S3Connection(object):
             return os.path.getsize(k.path)
         elif k.scheme == 's3':
             k = self._lookup(k.netloc, k.path)
-            if k == None:
+            if k is None:
                 raise KeyNotFound("s3://%s/%s not found on s3" % (k.netloc, k.path))
             return k.size
         else:
@@ -843,7 +847,7 @@ class S3Connection(object):
 
     def _get_etag(self, netloc, remote_path):
         k = self._lookup(netloc, remote_path)
-        if k == None:
+        if k is None:
             raise KeyNotFound("s3://%s/%s not found on s3" % (netloc, remote_path))
         return k.etag.strip("\"") # because s3 seriously gives the md5sum back wrapped in an extra set of double quotes...
 
@@ -853,7 +857,9 @@ class S3Connection(object):
         '''
         k = path.parse(key_or_file)
         if k.scheme == 'file':
-            import math, struct, hashlib
+            import math
+            import struct
+            import hashlib
             from bodylabs.util.paths import md5_for_file
             file_size = os.path.getsize(k.path)
             if file_size > S3_MAX_UPLOAD_SIZE:
@@ -1177,7 +1183,7 @@ class CachedFile(object):
                 else:
                     raise IOError(e.errno, "%s: %s" % (e.strerror, e.filename))
         else:
-            if connection == None:
+            if connection is None:
                 connection = S3Connection()
             self.connection = connection
             self.remotename = key
@@ -1320,7 +1326,7 @@ class path(object):
         is sufficiently one in a billion that we'll not worry about it for now.
         '''
         from boto.s3.key import Key
-        if uuid_generator == None:
+        if uuid_generator is None:
             from uuid import uuid4 as uuid_generator # pragma: no cover
 
         #s3.ls and s3.path.parse generated one with leading slash so remove it in case
