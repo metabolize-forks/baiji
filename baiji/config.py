@@ -55,7 +55,7 @@ class Credentials(object):
             if val:
                 return val
         try:
-            return self.raw_data[key]
+            return self.load()[key]
         except KeyError:
             raise AWSCredentialsMissing('AWS configuration is missing or ill formed.')
 

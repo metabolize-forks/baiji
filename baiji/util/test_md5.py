@@ -2,6 +2,7 @@ import unittest
 
 class TestMD5(unittest.TestCase):
     def test_md5(self):
+        import os
         import struct
         import tempfile
         from baiji.util.md5 import md5_for_file
