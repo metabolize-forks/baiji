@@ -68,7 +68,7 @@ class Credentials(object):
 
 credentials = Credentials()
 
-def is_avaliable():
+def is_available():
     from baiji.util.reachability import internet_reachable
     try:
         credentials.load()
