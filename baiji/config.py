@@ -23,8 +23,7 @@ class Credentials(object):
     def __init__(self):
         self._raw_data = None
 
-    @property
-    def raw_data(self):
+    def load(self):
         from baiji.util import yaml
         from baiji.util.environ import getenvpath
 
@@ -72,7 +71,7 @@ credentials = Credentials()
 def is_avaliable():
     from baiji.util.reachability import internet_reachable
     try:
-        _ = credentials.key
+        credentials.load()
     except AWSCredentialsMissing:
         return False
     return internet_reachable()
