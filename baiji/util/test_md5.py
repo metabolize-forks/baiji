@@ -4,7 +4,7 @@ class TestMD5(unittest.TestCase):
     def test_md5(self):
         import struct
         import tempfile
-        from bodylabs.util.paths import md5_for_file
+        from baiji.util.md5 import md5_for_file
         f = tempfile.NamedTemporaryFile('wb', delete=False)
         for _ in range(2**16):
             f.write(struct.pack("<I", 42))
