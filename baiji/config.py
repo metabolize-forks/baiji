@@ -1,10 +1,7 @@
 import os
 from baiji.exceptions import AWSCredentialsMissing
-from baiji.util.decorators import singleton, cached_property
 
-
-@singleton
-class credentials(object):
+class Credentials(object):
     '''
     Amazon AWS credential object
 
@@ -23,10 +20,16 @@ class credentials(object):
     default_path = '~/.bodylabs'
     aws_cli_path = '~/.aws/credentials'
 
-    @cached_property
+    def __init__(self):
+        self._raw_data = None
+
+    @property
     def raw_data(self):
         from baiji.util import yaml
         from baiji.util.environ import getenvpath
+
+        if self._raw_data:
+            return self._raw_data
 
         path = getenvpath(self.environment_variable, self.default_path)
         if os.path.isfile(path):
@@ -38,10 +41,11 @@ class credentials(object):
             import ConfigParser
             aws_cli_config = ConfigParser.ConfigParser()
             aws_cli_config.read([os.path.expanduser(self.aws_cli_path)])
-            return {
+            self._raw_data = {
                 'AWS_ACCESS_KEY': aws_cli_config.get('default', 'aws_access_key_id'),
                 'AWS_SECRET': aws_cli_config.get('default', 'aws_secret_access_key'),
             }
+            return self._raw_data
         else:
             raise AWSCredentialsMissing("Unable to read AWS configuration file: {}".format(path))
 
@@ -62,10 +66,12 @@ class credentials(object):
     def secret(self):
         return self._try(['AWS_SECRET_ACCESS_KEY', 'AWS_SECRET'], 'AWS_SECRET')
 
+credentials = Credentials()
+
 def is_avaliable():
     from baiji.util.reachability import internet_reachable
     try:
-        credentials.key # FIXME pylint: disable=pointless-statement
+        _ = credentials.key
         return internet_reachable()
     except AWSCredentialsMissing:
         return False
