@@ -28,13 +28,14 @@ class Credentials(object):
         from baiji.util import yaml
         from baiji.util.environ import getenvpath
 
-        if self._raw_data:
+        if self._raw_data is not None:
             return self._raw_data
 
         path = getenvpath(self.environment_variable, self.default_path)
         if os.path.isfile(path):
             try:
-                return yaml.load(path)
+                self._raw_data = yaml.load(path)
+                return self._raw_data
             except IOError:
                 raise AWSCredentialsMissing("Unable to read AWS configuration file: {}".format(path))
         elif os.path.isfile(os.path.expanduser(self.aws_cli_path)):
@@ -72,6 +73,6 @@ def is_avaliable():
     from baiji.util.reachability import internet_reachable
     try:
         _ = credentials.key
-        return internet_reachable()
     except AWSCredentialsMissing:
         return False
+    return internet_reachable()
