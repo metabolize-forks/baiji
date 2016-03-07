@@ -7,7 +7,7 @@ class AWSCredentialsMissing(AWSError):
 class InvalidSchemeException(ValueError):
     pass
 
-class S3Exception(Exception):
+class S3Exception(AWSError):
     pass
 
 class KeyNotFound(S3Exception):
