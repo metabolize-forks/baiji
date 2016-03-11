@@ -194,12 +194,31 @@ class TestS3(TestAWSBase):
 
     @mock.patch('baiji.s3.S3CopyOperation.ensure_integrity')
     def test_s3_cp_download_corrupted_recover_in_one_retry(self, ensure_integrity_mock):
-
         from baiji.s3 import get_transient_error_class
-
         ensure_integrity_mock.side_effect = [get_transient_error_class()('etag does not match'), None]
-
         s3.cp(self.existing_remote_file, self.tmp_dir, force=True)
+
+    @mock.patch('boto.s3.key.Key.get_contents_to_file')
+    def test_downloads_from_s3_are_atomic_under_truncation(self, download_mock):
+        from baiji.s3 import get_transient_error_class
+        def write_fake_truncated_file(fp, **kwargs): # just capturing whatever is thrown at us: pylint: disable=unused-argument
+            fp.write("12345")
+        download_mock.side_effect = write_fake_truncated_file
+        # Now when the call to download the file is made, the etags won't match
+        with self.assertRaises(get_transient_error_class()):
+            s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'truncated.foo'), validate=True)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp_dir, 'truncated.foo')))
+
+    @mock.patch('baiji.s3.S3CopyOperation.ensure_integrity')
+    def test_downloads_from_s3_are_atomic_under_exceptions(self, download_mock):
+        download_mock.side_effect = ValueError()
+        # Now when the call to download the file is made, an exception will be thrown.
+        # ideally, we'd throw it "in" boto via a mock, but we really want to test that
+        # the file doesn't get written, so let's go ahead and let boto do the download
+        # and then throw the exception in the validation
+        with self.assertRaises(ValueError):
+            s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'erroneous.foo'), validate=True)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp_dir, 'erroneous.foo')))
 
     @mock.patch('baiji.s3.S3CopyOperation.ensure_integrity')
     def test_s3_cp_download_corrupted_raise_transient_error_after_retried_once(self, ensure_integrity_mock):

@@ -14,6 +14,7 @@ if __name__ == '__main__':
     subparsers['rm'] = parser.subs.add_parser('rm', help='delete files on s3')
     subparsers['cp'] = parser.subs.add_parser('cp', help='copy files from or to s3')
     subparsers['mv'] = parser.subs.add_parser('mv', help='move files from or to s3')
+    subparsers['touch'] = parser.subs.add_parser('touch', help='touch a file on s3')
     subparsers['sync'] = parser.subs.add_parser('sync', help='move a directory tree from or to s3, a la rsync')
     subparsers['exists'] = parser.subs.add_parser('exists', help='check if a file exists on s3')
     subparsers['url'] = parser.subs.add_parser('url', help='generate a temporary url')
@@ -23,6 +24,7 @@ if __name__ == '__main__':
     subparsers['buckets'] = parser.subs.add_parser('buckets', help='tools for working with buckets')
     subparsers['version'] = parser.subs.add_parser('version', help='print version and exit')
     subparsers['is'] = parser.subs.add_parser('is', help='check that two files are the same')
+
     subparsers['ls'].add_argument('key', type=str, help='key to list, of the form s3://BUCKET/PREFIX')
     subparsers['ls'].add_argument('-B', '--uri', action='store_true', help='This option does nothing. It used to return URIs instead of paths, but this is now the default.')
     subparsers['ls'].add_argument('-l', '--detail', action='store_true', help='print details, like `ls -l`')
@@ -55,6 +57,8 @@ if __name__ == '__main__':
     subparsers['mv'].add_argument('-P', '--progress', action='store_true', help='show progress bar')
     subparsers['mv'].add_argument('--no-encrypt', dest='encrypt', default=True, action='store_false', help='Do not server side encrypt at rest')
     subparsers['mv'].add_argument('-z', '--gzip', action='store_true', help='Store compressed')
+
+    subparsers['touch'].add_argument('key', type=str, help='s3 key to touch')
 
     subparsers['sync'].add_argument('src', type=str, help='source directory or prefix')
     subparsers['sync'].add_argument('dst', type=str, help='destination directory or prefix')
@@ -97,6 +101,8 @@ if __name__ == '__main__':
             s3.cp(args.src, args.dst, **kwargs)
     if args.command == 'mv':
         s3.mv(args.src, args.dst, force=args.force, progress=args.progress, encrypt=args.encrypt, gzip=args.gzip)
+    if args.command == 'touch':
+        s3.touch(args.key)
     if args.command == 'sync':
         s3.sync(args.src, args.dst, do_not_delete=args.do_not_delete, progress=args.progress, policy=args.policy, encoding=args.encoding, encrypt=args.encrypt, guess_content_type=args.guess_content_type)
     if args.command == 'ls':

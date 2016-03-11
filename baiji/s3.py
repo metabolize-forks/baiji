@@ -70,6 +70,9 @@ def encrypt_at_rest(*args, **kwargs):
 def mv(*args, **kwargs):
     return S3Connection().mv(*args, **kwargs)
 
+def touch(*args, **kwargs):
+    return S3Connection().touch(*args, **kwargs)
+
 def sync_file(*args, **kwargs):
     return S3Connection().sync_file(*args, **kwargs)
 
@@ -191,7 +194,7 @@ class S3CopyOperation(object):
         '''
         Both src and dst may be files or s3 keys
         '''
-        # self.connection = connection
+        self.connection = connection
         self.src = self.CopyableKey(src, connection)
         self.dst = self.CopyableKey(dst, connection)
         self.task = (self.src.scheme, self.dst.scheme)
@@ -378,14 +381,6 @@ class S3CopyOperation(object):
             else:
                 raise
 
-    def ensure_integrity(self):
-        '''
-        Ensure integrity of downloaded file, remove the corrupted file and raise transient error
-        '''
-        if self.dst.etag() != self.src.etag():
-            self.dst.rm()
-            raise get_transient_error_class()('Destinaton file for ({}) is corrupted, retry count {}'.format(self.src.uri, self.retries_made))
-
     def local_copy(self):
         shutil.copy(self.src.path, self.dst.path)
 
@@ -447,19 +442,30 @@ class S3CopyOperation(object):
         Raise TransientError when download is corrupted again after retry
 
         '''
-
+        import tempfile
+        from baiji.util.with_progressbar import FileTransferProgressbar
+        # We create, close, and delete explicitly rather than using
+        # a `with` block, since on windows we can't have a file open
+        # twice by the same process.
+        tf = tempfile.NamedTemporaryFile(delete=False)
         try:
-            from baiji.util.with_progressbar import FileTransferProgressbar
             key = self.src.lookup()
+
             with FileTransferProgressbar(supress=(not self.progress)) as cb:
-                key.get_contents_to_filename(self.dst.path, cb=cb)
+                key.get_contents_to_file(tf, cb=cb)
+            tf.close()
 
             if self.validate:
-                self.ensure_integrity()
+                self.ensure_integrity(tf.name)
 
-        except get_transient_error_class() as transientError:
+            # We only actually write to dst.path if the download succeeds and
+            # if necessary is validated. This avoids leaving partially
+            # downloaded files if something goes wrong.
+            shutil.copy(tf.name, self.dst.path)
 
-            print transientError
+        except get_transient_error_class() as transient_error:
+            # Printed here so that papertrail can alert us when this occurs
+            print transient_error
 
             # retry once or raise
             if self.retries_made < self.retries_allowed:
@@ -467,6 +473,16 @@ class S3CopyOperation(object):
                 self.download()
             else:
                 raise
+
+        finally:
+            self.connection.rm(tf.name)
+
+    def ensure_integrity(self, filename):
+        '''
+        Ensure integrity of downloaded file; raise TransientError if there's a mismatch
+        '''
+        if self.connection.etag(filename) != self.src.etag():
+            raise get_transient_error_class()('Destinaton file for ({}) is corrupted, retry count {}'.format(self.src.uri, self.retries_made))
 
     def remote_copy(self):
         '''
@@ -893,6 +909,25 @@ class S3Connection(object):
         self.cp(key_or_file_from, key_or_file_to, **kwargs)
         self.rm(key_or_file_from)
 
+    def touch(self, key, encrypt=True):
+        """
+        Touch a local file or a path on s3
+        
+        Locally, this is analagous to the unix touch command
+        
+        On s3, it creates an empty file if there is not one there already,
+        but does not change the timestamps (not possible to do without
+        actually moving the file)
+        """
+        if path.islocal(key):
+            from bodylabs.util.shutillib import touch as _touch
+            _touch(path.parse(key).path)
+        else:
+            # The replace=False here means that we only take action if
+            # the file doesn't exist, so we don't accidentally truncate
+            # files when we just mean to be touching them
+            self.put_string(key, '', encrypt=encrypt, replace=False)
+
     def sync_file(self, src, dst, update=True, delete=False, progress=False, policy=None, encoding=None, encrypt=True, guess_content_type=False):
         '''
         Sync a file from src to dst.
@@ -989,16 +1024,20 @@ class S3Connection(object):
         k = path.parse(key)
         return self._lookup(k.netloc, k.path).generate_url(ttl)
 
-    def put_string(self, key, s):
+    def put_string(self, key, s, encrypt=True, replace=True):
         '''
         Save string ``s`` to S3 as ``key``.
+
+        If ``replace=True``, this will overwrite an existing key.
+        If ``replace=false``, this will be a no-op when the key already exists.
+
         '''
         from boto.s3.key import Key
         key = path.parse(key)
         b = self._bucket(key.netloc)
         k = Key(b)
         k.key = _strip_initial_slashes(key.path)
-        k.set_contents_from_string(s)
+        k.set_contents_from_string(s, encrypt_key=encrypt, replace=replace)
 
     def get_string(self, key):
         '''
@@ -1127,6 +1166,7 @@ class CachedFile(object):
     '''
     def __init__(self, key, mode='r', connection=None, encrypt=True):
         self.encrypt = encrypt
+        self.key = key
         if path.islocal(key):
             self.should_upload_on_close = False
             self.mode = FileMode(mode, allowed_modes='arwxb+t')
@@ -1152,20 +1192,14 @@ class CachedFile(object):
             if connection is None:
                 connection = S3Connection()
             self.connection = connection
-            self.remotename = key
-            self.key = path.parse(key)
 
             self.mode = FileMode(mode, allowed_modes='rwxbt')
             self.should_upload_on_close = self.mode.is_output
             if self.mode.creating_exclusively:
-                if self.connection._lookup(self.key.netloc, self.key.path): # pylint: disable=protected-access
-                    raise KeyExists("Key exists in bucket: %s" % self.key.geturl())
+                if self.connection.exists(self.key):
+                    raise KeyExists("Key exists in bucket: %s" % self.key)
                 else:
-                    # Touch the file
-                    from boto.s3.key import Key
-                    k = Key(self.connection._bucket(self.key.netloc)) # pylint: disable=protected-access
-                    k.key = _strip_initial_slashes(self.key.path)
-                    k.set_contents_from_string('', encrypt_key=self.encrypt)
+                    self.connection.touch(self.key, encrypt=self.encrypt)
             # Use w+ so we can read back the contents in upload()
             new_mode = (
                 'w+' +
@@ -1175,22 +1209,14 @@ class CachedFile(object):
             import tempfile
             self.f = tempfile.NamedTemporaryFile(
                 mode=new_mode,
-                suffix=os.path.splitext(self.key.path)[1]
+                suffix=os.path.splitext(path.parse(self.key).path)[1]
             )
             self.name = self.f.name
+            self.remotename = key # Used by some serialization code to find files which sit along side the file in question, like textures which sit next to a mesh file
             if self.mode.reading:
-                k = self.connection._lookup(self.key.netloc, self.key.path) # pylint: disable=protected-access
-                if k:
-                    k.get_contents_to_file(self.f)
-                    self.f.seek(0)
-                else:
-                    raise KeyNotFound("Key is not in bucket %s: %s" % (self.key.netloc, self.key.path))
+                self.connection.cp(self.key, self.name, force=True)
     def upload(self):
-        from boto.s3.key import Key
-        k = Key(self.connection._bucket(self.key.netloc)) # pylint: disable=protected-access
-        k.key = _strip_initial_slashes(self.key.path)
-        self.f.seek(0)
-        k.set_contents_from_file(self.f, encrypt_key=self.encrypt)
+        self.connection.cp(self.name, self.key, encrypt=self.encrypt, force=True)
     def __enter__(self):
         return self
     def __exit__(self, exc_type, exc_value, traceback):
