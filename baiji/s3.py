@@ -547,14 +547,21 @@ class S3Connection(object):
                                           suppress_consec_slashes=False)
         return self._conn
 
-    def _bucket(self, name):
-        # The call to `get_bucket` will make a HEAD request to S3 and raise S3ResponseError if the bucket doesn't exist.
-        # If we pass `validate=False` then it won't make the request, but it's behavor will be undefined if the bucket doesn't
-        # exist. So we don't want to not validate buckets in general, because that'd break things, but if we've seen the bucket
-        # before, then it's very likely that we'll see it again.
+    def _bucket(self, name, cache_buckets=None):
+        '''
+        The call to `get_bucket` will make a HEAD request to S3 and raise S3ResponseError if the bucket doesn't exist.
+        If we pass `validate=False` then it won't make the request, but it's behavor will be undefined if the bucket doesn't
+        exist. So we don't want to not validate buckets in general, because that'd break things, but if we've seen the bucket
+        before, then it's very likely that we'll see it again.
+
+        We support an object wide cache_buckets, or we can pass cache_buckets just to this call, which will override the
+        object wide value.
+        '''
         from boto.s3.connection import S3ResponseError
+        if cache_buckets is None:
+            cache_buckets = self.cache_buckets
         try:
-            if self.cache_buckets:
+            if cache_buckets:
                 if name in self._known_valid_buckets:
                     return self.conn.get_bucket(name, validate=False)
                 else:
@@ -569,9 +576,12 @@ class S3Connection(object):
             else:
                 raise
 
-    def _lookup(self, bucket_name, key):
+    def _lookup(self, bucket_name, key, cache_buckets=None):
+        '''
+        See _bucket for the details on cache_buckets
+        '''
         key = _strip_initial_slashes(key)
-        return self._bucket(bucket_name).lookup(key)
+        return self._bucket(bucket_name, cache_buckets=cache_buckets).lookup(key)
 
     def cp(self, key_or_file_from, key_or_file_to, force=False, progress=False, policy=None, preserve_acl=False, encoding=None, encrypt=True, gzip=False, content_type=None, guess_content_type=False, metadata=None, skip=False, validate=True):
         """
@@ -803,6 +813,18 @@ class S3Connection(object):
         Check if a file exists on AWS S3
 
         Returns a boolean.
+
+        If the key is not found then we recheck up to `retries_allowed` times. We only do this
+        on s3. We've had some observations of what appears to be eventual consistency, so this
+        makes it a bit more reliable. This does slow down the call in the case where the key
+        does not exist. On a relatively slow, high latency connection a test of 100 tries gives:
+
+        With retries_allowed=1: median=457.587 ms, mean=707.12387 ms
+        With retries_allowed=3: median=722.969 ms, mean=1185.86299 ms
+        with retries_allowed=10: median=2489.767 ms, mean=2995.34233 ms
+        With retries_allowed=100: median=24694.0815 ms, mean=26754.64137 ms
+
+        So assume that letting retries_allowed=3 will cost you a bit less than double the time.
         '''
         k = path.parse(key_or_file)
         if k.scheme == 'file':
@@ -810,7 +832,7 @@ class S3Connection(object):
         elif k.scheme == 's3':
             retry_attempts = 0
             while retry_attempts < retries_allowed:
-                if self._lookup(k.netloc, k.path) is not None:
+                if self._lookup(k.netloc, k.path, cache_buckets=True) is not None:
                     if retry_attempts > 0: # only if we find it after failing at least once
                         import warnings
                         from baiji.exceptions import EventualConsistencyWarning
