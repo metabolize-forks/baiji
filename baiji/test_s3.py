@@ -170,6 +170,27 @@ class TestAWS(TestAWSBase):
 
 class TestS3(TestAWSBase):
 
+    @mock.patch('baiji.s3.S3Connection._lookup')
+    def test_s3_exists_retries_if_not_found_at_first(self, mock_lookup):
+        mock_key = "all_we_care_is_that_it's not None"
+        mock_lookup.side_effect = [None, None, mock_key]
+        self.assertTrue(s3.exists('s3://foo'))
+        self.assertEqual(mock_lookup.call_count, 3)
+
+    @mock.patch('baiji.s3.S3Connection._lookup')
+    def test_s3_exists_does_not_retry_if_found_immidiately(self, mock_lookup):
+        mock_key = "all_we_care_is_that_it's not None"
+        mock_lookup.return_value = mock_key
+        self.assertTrue(s3.exists('s3://foo'))
+        self.assertEqual(mock_lookup.call_count, 1)
+
+    @mock.patch('baiji.s3.S3Connection._lookup')
+    def test_s3_exists_return_false_if_the_file_never_shows_up(self, mock_lookup):
+        mock_key = "all_we_care_is_that_it's not None"
+        mock_lookup.return_value = None
+        self.assertFalse(s3.exists('s3://foo'))
+        self.assertEqual(mock_lookup.call_count, 3)
+
     def test_s3_cp_local_to_local(self):
         s3.cp(self.local_file, os.path.join(self.tmp_dir, 'TEST.foo'))
         self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'TEST.foo')))

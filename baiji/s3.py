@@ -798,7 +798,7 @@ class S3Connection(object):
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)
         return result
 
-    def exists(self, key_or_file):
+    def exists(self, key_or_file, retries_allowed=3):
         '''
         Check if a file exists on AWS S3
 
@@ -808,7 +808,12 @@ class S3Connection(object):
         if k.scheme == 'file':
             return os.path.exists(k.path)
         elif k.scheme == 's3':
-            return self._lookup(k.netloc, k.path) is not None
+            retry_attempts = 0
+            while retry_attempts < retries_allowed:
+                if self._lookup(k.netloc, k.path) is not None:
+                    return True
+                retry_attempts += 1
+            return False
         else:
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)
 
