@@ -168,13 +168,23 @@ class TestAWS(TestAWSBase):
         self.assertEqual(credentials.key, truth['AWS_ACCESS_KEY'])
         self.assertEqual(credentials.secret, truth['AWS_SECRET'])
 
-class TestS3(TestAWSBase):
+
+class TestS3Exists(TestAWSBase):
 
     @mock.patch('baiji.s3.S3Connection._lookup')
     def test_s3_exists_retries_if_not_found_at_first(self, mock_lookup):
+        import warnings
+        from baiji.exceptions import EventualConsistencyWarning
         mock_key = "all_we_care_is_that_it's not None"
         mock_lookup.side_effect = [None, None, mock_key]
-        self.assertTrue(s3.exists('s3://foo'))
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            self.assertTrue(s3.exists('s3://foo'))
+            # Verify the warning was triggered
+            self.assertEqual(len(w), 1)
+            self.assertIs(w[-1].category, EventualConsistencyWarning)
+            self.assertEqual(str(w[-1].message), "S3 is behaving in an eventually consistent way in s3.exists(s3://foo)")
         self.assertEqual(mock_lookup.call_count, 3)
 
     @mock.patch('baiji.s3.S3Connection._lookup')
@@ -190,6 +200,9 @@ class TestS3(TestAWSBase):
         mock_lookup.return_value = None
         self.assertFalse(s3.exists('s3://foo'))
         self.assertEqual(mock_lookup.call_count, 3)
+
+
+class TestS3(TestAWSBase):
 
     def test_s3_cp_local_to_local(self):
         s3.cp(self.local_file, os.path.join(self.tmp_dir, 'TEST.foo'))

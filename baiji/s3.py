@@ -811,6 +811,10 @@ class S3Connection(object):
             retry_attempts = 0
             while retry_attempts < retries_allowed:
                 if self._lookup(k.netloc, k.path) is not None:
+                    if retry_attempts > 0: # only if we find it after failing at least once
+                        import warnings
+                        from baiji.exceptions import EventualConsistencyWarning
+                        warnings.warn("S3 is behaving in an eventually consistent way in s3.exists({})".format(key_or_file), EventualConsistencyWarning)
                     return True
                 retry_attempts += 1
             return False
