@@ -25,3 +25,9 @@ def get_transient_error_class():
         return TransientError
     except ImportError:
         return _TransientError
+
+class S3Warning(RuntimeWarning):
+    pass
+
+class EventualConsistencyWarning(S3Warning):
+    pass

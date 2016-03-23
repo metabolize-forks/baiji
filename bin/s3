@@ -37,6 +37,7 @@ if __name__ == '__main__':
     subparsers['rm'].add_argument('-f', '--force', action='store_true', help="don't prompt for confirmation on recursive rm")
 
     subparsers['exists'].add_argument('key', type=str, help='key to check')
+    subparsers['exists'].add_argument('--retries', type=int, help='how many times to retry', default=3)
 
     subparsers['cp'].add_argument('src', type=str, help='source file or key')
     subparsers['cp'].add_argument('dst', type=str, help='destination file, directory, or key')
@@ -128,7 +129,7 @@ if __name__ == '__main__':
         else:
             s3.rm(args.key)
     if args.command == 'exists':
-        if not s3.exists(args.key):
+        if not s3.exists(args.key, retries_allowed=args.retries):
             exit(-1)
     if args.command == 'url': print s3.get_url(args.key, args.expire)
     if args.command == 'md5': print s3.md5(args.key)
