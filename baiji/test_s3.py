@@ -184,7 +184,7 @@ class TestS3Exists(TestAWSBase):
             # Verify the warning was triggered
             self.assertEqual(len(w), 1)
             self.assertIs(w[-1].category, EventualConsistencyWarning)
-            self.assertEqual(str(w[-1].message), "S3 is behaving in an eventually consistent way in s3.exists(s3://foo)")
+            self.assertEqual(str(w[-1].message), "S3 is behaving in an eventually consistent way in s3.exists(s3://foo) -- it took 3 attempts to locate the key")
         self.assertEqual(mock_lookup.call_count, 3)
 
     @mock.patch('baiji.s3.S3Connection._lookup')

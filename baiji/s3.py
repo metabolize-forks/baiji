@@ -817,7 +817,10 @@ class S3Connection(object):
         If the key is not found then we recheck up to `retries_allowed` times. We only do this
         on s3. We've had some observations of what appears to be eventual consistency, so this
         makes it a bit more reliable. This does slow down the call in the case where the key
-        does not exist. On a relatively slow, high latency connection a test of 100 tries gives:
+        does not exist. 
+
+        On a relatively slow, high latency connection a test of 100 tests retreiving a
+        non-existant file gives:
 
         With retries_allowed=1: median=457.587 ms, mean=707.12387 ms
         With retries_allowed=3: median=722.969 ms, mean=1185.86299 ms
@@ -832,11 +835,12 @@ class S3Connection(object):
         elif k.scheme == 's3':
             retry_attempts = 0
             while retry_attempts < retries_allowed:
-                if self._lookup(k.netloc, k.path, cache_buckets=True) is not None:
+                key_exists = self._lookup(k.netloc, k.path, cache_buckets=True) is not None
+                if key_exists:
                     if retry_attempts > 0: # only if we find it after failing at least once
                         import warnings
                         from baiji.exceptions import EventualConsistencyWarning
-                        warnings.warn("S3 is behaving in an eventually consistent way in s3.exists({})".format(key_or_file), EventualConsistencyWarning)
+                        warnings.warn("S3 is behaving in an eventually consistent way in s3.exists({}) -- it took {} attempts to locate the key".format(key_or_file, retry_attempts+1), EventualConsistencyWarning)
                     return True
                 retry_attempts += 1
             return False
