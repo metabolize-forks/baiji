@@ -387,7 +387,7 @@ class S3CopyOperation(object):
     def upload(self):
         if self.gzip:
             import gzip
-            import tempfile
+            from baiji.util import tempfile
             with tempfile.NamedTemporaryFile() as compressed_src:
                 with open(self.src.path, 'rb') as f:
                     with gzip.open(compressed_src.name, 'wb') as tf:
@@ -442,7 +442,7 @@ class S3CopyOperation(object):
         Raise TransientError when download is corrupted again after retry
 
         '''
-        import tempfile
+        from baiji.util import tempfile
         from baiji.util.with_progressbar import FileTransferProgressbar
         # We create, close, and delete explicitly rather than using
         # a `with` block, since on windows we can't have a file open
@@ -1241,7 +1241,7 @@ class CachedFile(object):
                 (self.mode.binary and 'b' or '') +
                 (self.mode.text and 't' or '')
             )
-            import tempfile
+            from baiji.util import tempfile
             self.f = tempfile.NamedTemporaryFile(
                 mode=new_mode,
                 suffix=os.path.splitext(path.parse(self.key).path)[1]
