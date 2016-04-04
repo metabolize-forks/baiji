@@ -17,7 +17,7 @@ Features
 
 - Works without an S3 connection (with local files).
 - Supports multiprocess parallelism for copying lots of files.
-- Support Python 2.7 and uses boto2.
+- Supports Python 2.7 and uses boto2.
 - Supports OS X, Linux, and Windows.
 - Tested and production-hardened.
 
@@ -31,7 +31,13 @@ Examples
 with s3.open('s3://example/info.txt', 'w') as f:
     f.write('hello')
 
+with s3.open('file:///home/me/info.txt', 'w') as f:
+    f.write('hello')
+
 with s3.open('s3://example/info.txt', 'r') as f:
+    contents = f.readlines()
+
+with s3.open('file:///home/me/info.txt', 'r') as f:
     contents = f.readlines()
 ```
 
@@ -42,11 +48,41 @@ s3 rm s3://example/bar.txt
 ```
 
 
+Development
+-----------
+
+```sh
+pip install -r requirements_dev.txt
+rake test
+rake lint
+```
+
+
 TODO
 ----
 
-1. Migrate credentials to `~/.aws/credentials` and deprecate AWS credential
-   support in `~/.bodylabs`.
+1. Migrate credentials to `~/.aws/credentials` or env, and deprecate AWS
+   credential support in `~/.bodylabs`.
 2. Move `baiji.util.parallel` into a separate library.
-3. Check if `requirements.txt` is being handled okay, and think about how and
-   whether we will declare any of these dependencies in core.
+3. Upgrade to boto3.
+
+
+Contribute
+----------
+
+- Issue Tracker: github.com/bodylabs/baiji/issues
+- Source Code: github.com/bodylabs/baiji
+
+Pull requests welcome!
+
+
+Support
+-------
+
+If you are having issues, please let us know.
+
+
+License
+-------
+
+The project is licensed under the Apache license, version 2.0.
