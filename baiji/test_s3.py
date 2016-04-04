@@ -8,6 +8,8 @@ from baiji import s3
 from baiji.util.testing import create_random_temporary_file
 from baiji.util import tempfile
 
+TEST_BUCKET = 'baiji-test'
+
 class TestS3TmpDir(unittest.TestCase):
     '''
     We test this separately since we use it in TestAWSBase.setUp()
@@ -17,7 +19,7 @@ class TestS3TmpDir(unittest.TestCase):
         self.s3_path = 'tmp/' + str(uuid.uuid4()) + '/'
 
     def tearDown(self):
-        b = s3.S3Connection()._bucket('bodylabs-test')
+        b = s3.S3Connection()._bucket(TEST_BUCKET)
         for key in b.list(self.s3_path[0:-1]):
             b.delete_key(key)
 
@@ -26,12 +28,19 @@ class TestS3TmpDir(unittest.TestCase):
             fake_uuid.counter += 1
             return "FAKE-UUID-%d" % fake_uuid.counter
         fake_uuid.counter = 0
-        self.assertEqual(s3.path.gettmpdir(bucket='bodylabs-test', prefix=self.s3_path, uuid_generator=fake_uuid), 's3://bodylabs-test/%sFAKE-UUID-1/' % self.s3_path)
-        self.assertEqual(len(list(s3.ls('s3://bodylabs-test/%sFAKE-UUID-1' % self.s3_path))), 1)
-        self.assertTrue(s3.exists('s3://bodylabs-test/%sFAKE-UUID-1/.tempdir' % self.s3_path))
-        self.assertEqual(s3.path.gettmpdir(bucket='bodylabs-test', prefix=self.s3_path, uuid_generator=fake_uuid), 's3://bodylabs-test/%sFAKE-UUID-2/' % self.s3_path)
-        self.assertEqual(len(list(s3.ls('s3://bodylabs-test/%sFAKE-UUID-2' % self.s3_path))), 1)
-        self.assertTrue(s3.exists('s3://bodylabs-test/%sFAKE-UUID-2/.tempdir' % self.s3_path))
+        self.assertEqual(
+            s3.path.gettmpdir(bucket=TEST_BUCKET, prefix=self.s3_path, uuid_generator=fake_uuid),
+            's3://%s/%sFAKE-UUID-1/' % (TEST_BUCKET, self.s3_path))
+        self.assertEqual(
+            len(list(s3.ls('s3://%s/%sFAKE-UUID-1' % (TEST_BUCKET, self.s3_path)))),
+            1)
+        self.assertTrue(
+            s3.exists('s3://%s/%sFAKE-UUID-1/.tempdir' % (TEST_BUCKET, self.s3_path)))
+        self.assertEqual(
+            s3.path.gettmpdir(bucket=TEST_BUCKET, prefix=self.s3_path, uuid_generator=fake_uuid),
+            's3://%s/%sFAKE-UUID-2/' % (TEST_BUCKET, self.s3_path))
+        self.assertEqual(len(list(s3.ls('s3://%s/%sFAKE-UUID-2' % (TEST_BUCKET, self.s3_path)))), 1)
+        self.assertTrue(s3.exists('s3://%s/%sFAKE-UUID-2/.tempdir' % (TEST_BUCKET, self.s3_path)))
 
 class TestS3Path(unittest.TestCase):
 
@@ -90,7 +99,7 @@ class TestAWSBase(unittest.TestCase):
     self.retriable_s3_call(call, retries=3) # For testing methods that may fail due to bad connections
     """
     def setUp(self):
-        self.bucket = 'bodylabs-test'
+        self.bucket = TEST_BUCKET
         self.s3_test_location = s3.path.gettmpdir(bucket=self.bucket)
         loc = s3.path.parse(self.s3_test_location)
         self.s3_path = loc.path
