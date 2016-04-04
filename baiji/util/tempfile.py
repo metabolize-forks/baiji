@@ -7,10 +7,13 @@ its temporary download files there.
 '''
 from __future__ import absolute_import
 import os
+from baiji.util.shutillib import mkdir_p
 
 def _override_tmp(fn, args, kwargs):
     if 'dir' not in kwargs:
         kwargs['dir'] = os.environ.get('BAIJI_TMP', None)
+        if kwargs['dir'] is not None:
+            mkdir_p(kwargs['dir'])
     return fn(*args, **kwargs)
 
 
