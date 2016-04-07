@@ -982,3 +982,25 @@ class TestCachedFile(TestAWSBase):
         with s3.open(self.remote_file("openable"), 'r') as f:
             pass
         self.assertFalse(upload.called)
+
+class TestS3ConnectionPersistence(object):
+    def test_connection_is_cached(self):
+        # Using a cached connection is 2 orders of magnitude faster than
+        # creating a new connection instance.
+
+        connection = s3.S3Connection()
+
+        # Creating the object does not a connection make
+        self.assertFalse(connection._connected)
+
+        # connection.conn is created on first use and contains the connection object
+        # Whenever s3 operations are performed, a call is made to this object.
+        # In order to eliminate the middleman, we make the call directly in this test.
+        established_connection_id = id(connection.conn)
+
+        # Now it should be registered that the connection is made and cached.
+        self.assertTrue(connection._connected)
+
+        # And connection.conn should not change when accessed again.
+        connection_id_on_second_call = id(connection.conn)
+        self.assertEquals(established_connection_id, connection_id_on_second_call)
