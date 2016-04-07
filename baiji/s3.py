@@ -533,6 +533,7 @@ class MultifileCopyWorker(ParallelWorker):
 class S3Connection(object):
     def __init__(self, cache_buckets=False):
         self._connected = False
+        self._conn = None
         self.cache_buckets = cache_buckets
         self._known_valid_buckets = set()
 
@@ -545,6 +546,7 @@ class S3Connection(object):
             self._conn = BotoS3Connection(credentials.key, credentials.secret,
                                           calling_format=OrdinaryCallingFormat(),
                                           suppress_consec_slashes=False)
+            self._connected = True
         return self._conn
 
     def _bucket(self, name, cache_buckets=None):
