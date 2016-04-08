@@ -983,7 +983,7 @@ class TestCachedFile(TestAWSBase):
             pass
         self.assertFalse(upload.called)
 
-class TestS3ConnectionPersistence(object):
+class TestS3ConnectionPersistence(unittest.TestCase):
     def test_connection_is_cached(self):
         # Using a cached connection is 2 orders of magnitude faster than
         # creating a new connection instance.
