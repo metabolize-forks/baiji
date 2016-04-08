@@ -20,7 +20,6 @@ from baiji.exceptions import InvalidSchemeException, S3Exception, KeyNotFound, K
 from baiji.util.parallel import ParallelWorker
 
 # FIXME pylint: disable=too-many-lines
-# FIXME pylint: disable=attribute-defined-outside-init
 
 S3_MAX_UPLOAD_SIZE = 1024*1024*1024*5 # 5gb
 
@@ -139,6 +138,7 @@ class S3CopyOperation(object):
             self.raw = key
             self.connection = connection
             self.parsed = path.parse(key)
+            self.remote_path = None # value here will be set by the path setting, this just satisfies lint
             self.path = self.parsed.path
             if not (self.path.startswith(sep) or re.match(r'^[a-zA-Z]:', self.path)):
                 self.path = sep + self.path
@@ -151,7 +151,7 @@ class S3CopyOperation(object):
             return self._path
         @path.setter
         def path(self, val):
-            self._path = val
+            self._path = val # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
             # For remote operations, we need a path without initial slashes
             self.remote_path = _strip_initial_slashes(self.path)
         @property
@@ -217,6 +217,8 @@ class S3CopyOperation(object):
         self.retries_allowed = 1
         self._retries = 0
 
+        self.file_size = None
+
     @property # read only
     def retries_made(self):
         return self._retries
@@ -228,7 +230,7 @@ class S3CopyOperation(object):
     def policy(self, val):
         if val and self.dst.is_file:
             raise ValueError("Policy only allowed when copying to s3")
-        self._policy = val
+        self._policy = val  # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def preserve_acl(self):
@@ -238,7 +240,7 @@ class S3CopyOperation(object):
         val = bool(val)
         if val and self.task != ('s3', 's3'):
             raise ValueError("Preserve ACL only allowed when copying from s3 to s3")
-        self._preserve_acl = val
+        self._preserve_acl = val  # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def progress(self):
@@ -246,7 +248,7 @@ class S3CopyOperation(object):
     @progress.setter
     def progress(self, val):
         val = bool(val)
-        self._progress = val
+        self._progress = val  # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def force(self):
@@ -254,7 +256,7 @@ class S3CopyOperation(object):
     @force.setter
     def force(self, val):
         val = bool(val)
-        self._force = val
+        self._force = val  # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def skip(self):
@@ -262,7 +264,7 @@ class S3CopyOperation(object):
     @skip.setter
     def skip(self, val):
         val = bool(val)
-        self._skip_exist = val
+        self._skip_exist = val # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def encrypt(self):
@@ -270,14 +272,14 @@ class S3CopyOperation(object):
     @encrypt.setter
     def encrypt(self, val):
         val = bool(val) and self.dst.is_s3
-        self._encrypt = val
+        self._encrypt = val  # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def validate(self):
         return self._validate
     @validate.setter
     def validate(self, val):
-        self._validate = bool(val)
+        self._validate = bool(val) # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def encoding(self):
@@ -288,7 +290,7 @@ class S3CopyOperation(object):
             raise ValueError("Encoding can only be specified when copying to s3")
         if val is not None and self.gzip and val != 'gzip':
             raise ValueError("gzip overrides explicit encoding")
-        self._encoding = val
+        self._encoding = val # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def gzip(self):
@@ -300,7 +302,7 @@ class S3CopyOperation(object):
             raise ValueError("gzip can only be specified when uploading to s3")
         if val and self.encoding is not None and self.encoding != 'gzip':
             raise ValueError("gzip overrides explicit encoding")
-        self._gzip = val
+        self._gzip = val # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def content_type(self):
@@ -309,7 +311,7 @@ class S3CopyOperation(object):
     def content_type(self, val):
         if val is not None and self.dst.is_file:
             raise ValueError("Content Type can only be specified when copying to s3")
-        self._content_type = val
+        self._content_type = val # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
     def guess_content_type(self):
         import mimetypes
         content_type, _ = mimetypes.guess_type(self.src.path)
@@ -346,7 +348,7 @@ class S3CopyOperation(object):
             raise ValueError("Metadata can only be specified when copying to s3")
         if val is None:
             val = {}
-        self._metadata = val
+        self._metadata = val # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     def execute(self):
         from boto.s3.connection import S3ResponseError
