@@ -147,6 +147,12 @@ class TestS3(TestAWSBase):
         ensure_integrity_mock.side_effect = [get_transient_error_class()('etag does not match'), None]
         s3.cp(self.existing_remote_file, self.tmp_dir, force=True)
 
+    @mock.patch('baiji.s3.S3CopyOperation.ensure_integrity')
+    def test_s3_cp_download_lookup_recover_in_one_retry(self, ensure_integrity_mock):
+        from baiji.exceptions import KeyNotFound
+        ensure_integrity_mock.side_effect = [KeyNotFound('key not found'), None]
+        s3.cp(self.existing_remote_file, self.tmp_dir, force=True)
+
     @mock.patch('boto.s3.key.Key.get_contents_to_file')
     def test_downloads_from_s3_are_atomic_under_truncation(self, download_mock):
         from baiji.s3 import get_transient_error_class

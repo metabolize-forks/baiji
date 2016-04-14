@@ -465,9 +465,9 @@ class S3CopyOperation(object):
             # downloaded files if something goes wrong.
             shutil.copy(tf.name, self.dst.path)
 
-        except get_transient_error_class() as transient_error:
+        except (get_transient_error_class(), KeyNotFound) as retryable_error:
             # Printed here so that papertrail can alert us when this occurs
-            print transient_error
+            print retryable_error
 
             # retry once or raise
             if self.retries_made < self.retries_allowed:
@@ -821,7 +821,7 @@ class S3Connection(object):
         If the key is not found then we recheck up to `retries_allowed` times. We only do this
         on s3. We've had some observations of what appears to be eventual consistency, so this
         makes it a bit more reliable. This does slow down the call in the case where the key
-        does not exist. 
+        does not exist.
 
         On a relatively slow, high latency connection a test of 100 tests retreiving a
         non-existant file gives:
@@ -951,9 +951,9 @@ class S3Connection(object):
     def touch(self, key, encrypt=True):
         """
         Touch a local file or a path on s3
-        
+
         Locally, this is analagous to the unix touch command
-        
+
         On s3, it creates an empty file if there is not one there already,
         but does not change the timestamps (not possible to do without
         actually moving the file)
