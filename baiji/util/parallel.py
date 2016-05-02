@@ -65,7 +65,7 @@ def parallel_for(a, cls, args=[], kwargs={}, num_processes=None):
     if num_processes is None:
         num_processes = cpu_count()
     # Note that JoinableQueue uses an integer for tracking locations in the queue.
-    # Because it's using shared memory it's not terribly flexible and gives annoyingly 
+    # Because it's using shared memory it's not terribly flexible and gives annoyingly
     # unclear errors if you go over the limit. We'd like the queue to be as large as
     # possible so that we can avoid contention, but without allocating a max possible
     # size queue unless we need it, thus the calculation below. 32767 is a hard limit.
@@ -79,7 +79,7 @@ def parallel_for(a, cls, args=[], kwargs={}, num_processes=None):
     output_watcher = MultiPipeWatcher(recv_pipes)
     try:
         for p in pool:
-            p.start() 
+            p.start()
         output_watcher.start()
         for x in a:
             q.put(x)
@@ -97,9 +97,9 @@ def parallel_for(a, cls, args=[], kwargs={}, num_processes=None):
     except KeyboardInterrupt:
         print "Interrupted -- terminating worker processes"
         for p in pool:
-            p.terminate() 
+            p.terminate()
         for p in pool:
-            p.join() 
+            p.join()
         raise
 
 
