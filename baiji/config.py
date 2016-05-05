@@ -30,24 +30,31 @@ class Credentials(object):
         if self._raw_data is not None:
             return self._raw_data
 
-        path = getenvpath(self.environment_variable, self.default_path)
-        if os.path.isfile(path):
-            try:
-                self._raw_data = yaml.load(path)
-                return self._raw_data
-            except IOError:
-                raise AWSCredentialsMissing("Unable to read AWS configuration file: {}".format(path))
-        elif os.path.isfile(os.path.expanduser(self.aws_cli_path)):
+        raw_data = {}
+
+        if os.path.isfile(os.path.expanduser(self.aws_cli_path)):
             import ConfigParser
             aws_cli_config = ConfigParser.ConfigParser()
             aws_cli_config.read([os.path.expanduser(self.aws_cli_path)])
-            self._raw_data = {
+            raw_data.update({
                 'AWS_ACCESS_KEY': aws_cli_config.get('default', 'aws_access_key_id'),
                 'AWS_SECRET': aws_cli_config.get('default', 'aws_secret_access_key'),
-            }
-            return self._raw_data
-        else:
+            })
+
+        # If the two files have different keys, `.bodylabs` is used.
+        path = getenvpath(self.environment_variable, self.default_path)
+        if os.path.isfile(path):
+            try:
+                raw_data.update(yaml.load(path))
+            except IOError:
+                raise AWSCredentialsMissing("Unable to read AWS configuration file: {}".format(path))
+
+        if not raw_data:
             raise AWSCredentialsMissing("Unable to read AWS configuration file: {}".format(path))
+
+        self._raw_data = raw_data
+
+        return self._raw_data
 
     def _try(self, var_list, key):
         for var in var_list:
