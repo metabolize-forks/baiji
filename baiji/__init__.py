@@ -4,5 +4,3 @@
 # https://www.python.org/dev/peps/pep-0420/
 from pkgutil import extend_path
 __path__ = extend_path(__path__, __name__)
-
-__version__ = '2.2.7'

@@ -149,4 +149,6 @@ if __name__ == '__main__':
                 print "%s: %s" % (k, v)
         else:
             print "\n".join(s3.list_buckets())
-    if args.command == 'version': print baiji.__version__
+    if args.command == 'version':
+        from baiji import package_version
+        print package_version.__version__

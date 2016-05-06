@@ -13,11 +13,12 @@ requirements_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 're
 with open(requirements_file, 'r') as f:
     install_requires = [x.strip() for x in f.readlines()]
 
+import importlib
 from setuptools import setup
 
 setup(
     name='baiji',
-    version=__import__('baiji').__version__,
+    version=importlib.import_module('baiji.package_version').__version__,,
     author='Body Labs',
     author_email='alex@bodylabs.com, paul.melnikow@bodylabs.com, chenyang.liu@bodylabs.com',
     description='High-level Python abstraction layer for Amazon S3',
