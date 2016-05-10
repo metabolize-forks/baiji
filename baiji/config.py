@@ -45,9 +45,12 @@ class Credentials(object):
         path = getenvpath(self.environment_variable, self.default_path)
         if os.path.isfile(path):
             try:
-                raw_data.update(yaml.load(path))
+                bodylabs_data = yaml.load(path)
             except IOError:
                 raise AWSCredentialsMissing("Unable to read AWS configuration file: {}".format(path))
+            # Don't crash on an empty ~/.bodylabs.
+            if bodylabs_data is not None:
+                raw_data.update(bodylabs_data)
 
         if not raw_data:
             raise AWSCredentialsMissing("Unable to read AWS configuration file: {}".format(path))
