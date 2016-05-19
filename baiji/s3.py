@@ -380,6 +380,8 @@ class S3CopyOperation(object):
         except S3ResponseError as e:
             if e.status == 403:
                 raise S3Exception("HTTP Error 403: Permission Denied on {}".format(" or ".join([x.uri for x in [self.src, self.dst] if x.is_s3])))
+            elif e.status == 404:
+                raise KeyNotFound("Error copying %s to %s: Source or desitnation bucket doesn't exist" % (self.src.uri, self.dst.uri))
             else:
                 raise
 
