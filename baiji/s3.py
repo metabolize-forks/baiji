@@ -219,6 +219,8 @@ class S3CopyOperation(object):
 
         self.file_size = None
 
+        self.directory_created = None
+
     @property # read only
     def retries_made(self):
         return self._retries
@@ -382,6 +384,8 @@ class S3CopyOperation(object):
                 raise S3Exception("HTTP Error 403: Permission Denied on {}".format(" or ".join([x.uri for x in [self.src, self.dst] if x.is_s3])))
             else:
                 raise
+        finally:
+            self.cleanup_local_destination()
 
     def local_copy(self):
         shutil.copy(self.src.path, self.dst.path)
@@ -505,8 +509,25 @@ class S3CopyOperation(object):
 
     def prep_local_destination(self):
         from baiji.util.shutillib import mkdir_p
-        mkdir_p(os.path.dirname(self.dst.path))
+        dirname = os.path.dirname(self.dst.path)
+        if not os.path.isdir(dirname):
+            mkdir_p(dirname)
+            self.directory_created = dirname
 
+    def cleanup_local_destination(self):
+        '''
+        Avoid leaving behind an empty directory as a side effect of copying a
+        nonexistent file.
+        '''
+        import errno
+        if self.directory_created:
+            try:
+                os.rmdir(self.directory_created)
+            except OSError as e:
+                if e.errno == errno.ENOTEMPTY:
+                    pass
+                else:
+                    raise
 
 class MultifileCopyWorker(ParallelWorker):
     '''
