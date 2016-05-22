@@ -16,7 +16,7 @@ a file from S3 into a local file.
 import os
 import shutil
 import re
-from baiji.exceptions import InvalidSchemeException, S3Exception, KeyNotFound, KeyExists, get_transient_error_class
+from baiji.exceptions import InvalidSchemeException, S3Exception, KeyNotFound, BucketNotFound, KeyExists, get_transient_error_class
 from baiji.util.parallel import ParallelWorker
 
 # FIXME pylint: disable=too-many-lines
@@ -577,6 +577,8 @@ class S3Connection(object):
         except S3ResponseError as e:
             if e.status == 403:
                 raise S3Exception("HTTP Error 403: Permission Denied on s3://{}/".format(name))
+            elif e.status == 404:
+                raise BucketNotFound('Bucket does not exist: {}'.format(name))
             else:
                 raise
 
@@ -585,7 +587,13 @@ class S3Connection(object):
         See _bucket for the details on cache_buckets
         '''
         key = _strip_initial_slashes(key)
-        return self._bucket(bucket_name, cache_buckets=cache_buckets).lookup(key)
+
+        try:
+            bucket = self._bucket(bucket_name, cache_buckets=cache_buckets)
+        except BucketNotFound:
+            return None
+
+        return bucket.lookup(key)
 
     def cp(self, key_or_file_from, key_or_file_to, force=False, progress=False, policy=None, preserve_acl=False, encoding=None, encrypt=True, gzip=False, content_type=None, guess_content_type=False, metadata=None, skip=False, validate=True):
         """
@@ -839,8 +847,8 @@ class S3Connection(object):
         elif k.scheme == 's3':
             retry_attempts = 0
             while retry_attempts < retries_allowed:
-                key_exists = self._lookup(k.netloc, k.path, cache_buckets=True) is not None
-                if key_exists:
+                key = self._lookup(k.netloc, k.path, cache_buckets=True)
+                if key:
                     if retry_attempts > 0: # only if we find it after failing at least once
                         import warnings
                         from baiji.exceptions import EventualConsistencyWarning

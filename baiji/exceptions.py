@@ -13,6 +13,12 @@ class S3Exception(AWSError):
 class KeyNotFound(S3Exception):
     pass
 
+class BucketNotFound(KeyNotFound):
+    '''
+    Derived from `KeyNotFound` for the caller's convenience.
+    '''
+    pass
+
 class KeyExists(S3Exception):
     pass
 

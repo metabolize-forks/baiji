@@ -413,6 +413,13 @@ class TestS3(TestAWSBase):
         #case: remote file, "exists" but is directory (so it actually doesn't exist but could return false positive)
         self.assertFalse(s3.path.isfile(existing_remote_dir))
 
+    def test_raises_keyerror_for_nonexistent_bucket(self):
+        with self.assertRaises(s3.KeyNotFound):
+            s3.ls('s3://foo-bar-baz-please-this-is-not-a-bucket-amirite')
+
+    def test_exists_returns_false_for_nonexistent_bucket(self):
+        self.assertFalse(s3.exists('s3://foo-bar-baz-please-this-is-not-a-bucket-amirite'))
+
 
 class TestEncryption(TestAWSBase):
     def test_encrypt_in_place(self):
