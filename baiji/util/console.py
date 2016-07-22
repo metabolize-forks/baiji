@@ -43,7 +43,7 @@ def create_conditional_print(should_print):
     Usage:
 
     def do_something(verbose=False):
-        from bodylabs.util.console import create_conditional_print
+        from baiji.util.console import create_conditional_print
         print_verbose = create_conditional_print(verbose)
 
         print_verbose('Here is something which might print')

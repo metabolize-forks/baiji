@@ -967,8 +967,9 @@ class S3Connection(object):
         actually moving the file)
         """
         if path.islocal(key):
-            from bodylabs.util.shutillib import touch as _touch
-            _touch(path.parse(key).path)
+            filename = path.parse(key).path
+            with open(filename, 'a'):
+                os.utime(filename, None)
         else:
             # The replace=False here means that we only take action if
             # the file doesn't exist, so we don't accidentally truncate
