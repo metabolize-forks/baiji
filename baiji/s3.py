@@ -60,6 +60,9 @@ def size(*args, **kwargs):
 def etag(*args, **kwargs):
     return S3Connection().etag(*args, **kwargs)
 
+def etag_matches(*args, **kwargs):
+    return S3Connection().etag_matches(*args, **kwargs)
+
 def md5(*args, **kwargs):
     return S3Connection().md5(*args, **kwargs)
 
@@ -213,6 +216,7 @@ class S3CopyOperation(object):
         self.content_type = None
         self.metadata = {}
         self.skip = False
+        self.max_size = S3_MAX_UPLOAD_SIZE
 
         self.retries_allowed = 1
         self._retries = 0
@@ -303,6 +307,15 @@ class S3CopyOperation(object):
         if val and self.encoding is not None and self.encoding != 'gzip':
             raise ValueError("gzip overrides explicit encoding")
         self._gzip = val # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
+
+    @property
+    def max_size(self):
+        return self._max_size
+    @max_size.setter
+    def max_size(self, val):
+        if val is None:
+            val = S3_MAX_UPLOAD_SIZE
+        self._max_size = val # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
 
     @property
     def content_type(self):
@@ -402,7 +415,7 @@ class S3CopyOperation(object):
 
     def _upload(self):
         self.file_size = os.path.getsize(self.src.path)
-        if self.file_size > S3_MAX_UPLOAD_SIZE:
+        if self.file_size > self.max_size:
             self.upload_multipart()
         else:
             self.upload_direct()
@@ -412,13 +425,13 @@ class S3CopyOperation(object):
         from baiji.util.with_progressbar import FileTransferProgressbar
         with FileTransferProgressbar(supress=(not self.progress), maxval=self.file_size) as cb:
             mp = self.dst.bucket.initiate_multipart_upload(self.dst.remote_path, encrypt_key=self.encrypt, metadata=self.metadata)
-            n_parts = int(math.ceil(float(self.file_size) / S3_MAX_UPLOAD_SIZE))
+            n_parts = int(math.ceil(float(self.file_size) / self.max_size))
             try:
                 for ii in range(n_parts):
                     with open(self.src.path, 'r') as fp:
-                        fp.seek(S3_MAX_UPLOAD_SIZE*ii)
-                        part_size = self.file_size - S3_MAX_UPLOAD_SIZE*ii if ii+1 == n_parts else S3_MAX_UPLOAD_SIZE
-                        cb.minval = S3_MAX_UPLOAD_SIZE*ii
+                        fp.seek(self.max_size*ii)
+                        part_size = self.file_size - self.max_size*ii if ii+1 == n_parts else self.max_size
+                        cb.minval = self.max_size*ii
                         num_cb = part_size / (1024*1024)
                         mp.upload_part_from_file(fp=fp, part_num=ii+1, size=part_size, cb=cb, num_cb=num_cb)
                 mp.complete_upload()
@@ -483,7 +496,7 @@ class S3CopyOperation(object):
         '''
         Ensure integrity of downloaded file; raise TransientError if there's a mismatch
         '''
-        if self.connection.etag(filename) != self.src.etag():
+        if not self.connection.etag_matches(filename, self.src.etag()):
             raise get_transient_error_class()('Destinaton file for ({}) is corrupted, retry count {}'.format(self.src.uri, self.retries_made))
 
     def remote_copy(self):
@@ -595,7 +608,7 @@ class S3Connection(object):
 
         return bucket.lookup(key)
 
-    def cp(self, key_or_file_from, key_or_file_to, force=False, progress=False, policy=None, preserve_acl=False, encoding=None, encrypt=True, gzip=False, content_type=None, guess_content_type=False, metadata=None, skip=False, validate=True):
+    def cp(self, key_or_file_from, key_or_file_to, force=False, progress=False, policy=None, preserve_acl=False, encoding=None, encrypt=True, gzip=False, content_type=None, guess_content_type=False, metadata=None, skip=False, validate=True, max_size=None):
         """
         Copy file to or from AWS S3
 
@@ -622,6 +635,7 @@ class S3Connection(object):
         op.metadata = metadata
         op.skip = skip
         op.validate = validate
+        op.max_size = max_size
 
         if guess_content_type:
             op.guess_content_type()
@@ -880,27 +894,80 @@ class S3Connection(object):
             raise KeyNotFound("s3://%s/%s not found on s3" % (netloc, remote_path))
         return k.etag.strip("\"") # because s3 seriously gives the md5sum back wrapped in an extra set of double quotes...
 
+    def _build_etag(self, local_path, n_parts, part_size):
+        '''
+        When a file has been uploaded to s3 as a multipart upload, the etag is no
+        longer a simple md5 hash. What happens is s3 calculates md5 hashes of each
+        of the parts as they are uploaded and then when the final "complete upload"
+        step is run, the individual md5 hashes are concatenated and put through a
+        final round of md5. Then the number of parts is appended to the hash with
+        a -, in the form `HASH-N`. The algorithm is undocumented (and Amazon has
+        changed it without notice in the past), but more details can be found here:
+        http://stackoverflow.com/questions/12186993/what-is-the-algorithm-to-compute-the-amazon-s3-etag-for-a-file-larger-than-5gb
+        '''
+        import hashlib
+        import struct
+        from baiji.util.md5 import md5_for_file
+        starts = [ii*part_size for ii in range(n_parts)]
+        ends = [(ii+1)*part_size for ii in range(n_parts)]
+        ends[-1] = None
+        hashes = [md5_for_file(local_path, start=start, end=end) for start, end in zip(starts, ends)]
+        md5_digester = hashlib.md5()
+        for h in hashes:
+            md5_digester.update(struct.pack("!16B", *[int(h[x:x+2], 16) for x in range(0, len(h), 2)]))
+        return md5_digester.hexdigest() + "-%d" % n_parts
+
+    def etag_matches(self, key_or_file, other_etag):
+        import math
+        k = path.parse(key_or_file)
+        # print "***", key_or_file, other_etag
+        if "-" not in other_etag or k.scheme == 's3':
+            return self.etag(key_or_file) == other_etag
+        else: # This is the case where the key was uploaded multipart and has a `md5-n_parts` type etag
+            n_parts = int(other_etag.split("-")[1])
+            file_size = os.path.getsize(k.path)
+            # There are a number of possible part sizes that could produce any given
+            # number of parts. The most likely and only ones we've seen so far are
+            # these, but we might someday need to try others, which might require
+            # exhaustively searching the possibilities....
+
+            # (n_parts-1) * part_size >= file_size >= n_parts * part_size
+            min_part_size = int(math.ceil(float(file_size)/n_parts))
+            max_part_size = file_size / (n_parts-1)
+            # print "  - min part size {} gives last block size of {}".format(min_part_size, file_size - min_part_size*(n_parts-1))
+            # print "  - max part size {} gives last block size of {}".format(max_part_size, file_size - max_part_size*(n_parts-1))
+            possible_part_sizes = [
+                S3_MAX_UPLOAD_SIZE, # what we do
+                file_size/n_parts, # seen this from third party uploaders
+                min_part_size, # just in case
+                max_part_size, # seen this from third party uploaders
+                1024*1024*8, # seen this from third party uploaders
+                1024*1024*5, # the minimum s3 will allow
+            ]
+            # print "  - {} parts, file size {} bytes".format(n_parts, file_size)
+            # print "  - possible_part_sizes:", possible_part_sizes
+            possible_part_sizes = set([part_size for part_size in possible_part_sizes if part_size <= max_part_size and part_size >= 1024*1024*5])
+            # print "  - possible_part_sizes:", possible_part_sizes
+            if len(possible_part_sizes) == 0:
+                return False
+            for part_size in possible_part_sizes:
+                # print "  -", part_size, self._build_etag(k.path, n_parts, part_size)
+                if self._build_etag(k.path, n_parts, part_size) == other_etag:
+                    return True
+            return False
+
     def etag(self, key_or_file):
         '''
-        Return the s3 etag of the file. For files less than 5gb, this is the same as md5.
+        Return the s3 etag of the file. For single part uploads (for us, files less than 5gb) this is the same as md5.
         '''
         k = path.parse(key_or_file)
         if k.scheme == 'file':
             import math
-            import struct
-            import hashlib
             from baiji.util.md5 import md5_for_file
             file_size = os.path.getsize(k.path)
             if file_size > S3_MAX_UPLOAD_SIZE:
                 n_parts = int(math.ceil(float(file_size) / S3_MAX_UPLOAD_SIZE))
-                starts = [ii*S3_MAX_UPLOAD_SIZE for ii in range(n_parts)]
-                ends = [(ii+1)*S3_MAX_UPLOAD_SIZE for ii in range(n_parts)]
-                ends[-1] = None
-                hashes = [md5_for_file(k.path, start=start, end=end) for start, end in zip(starts, ends)]
-                md5_digester = hashlib.md5()
-                for h in hashes:
-                    md5_digester.update(struct.pack("!16B", *[int(h[x:x+2], 16) for x in range(0, len(h), 2)]))
-                return md5_digester.hexdigest() + "-%d" % n_parts
+                return self._build_etag(k.path, n_parts, S3_MAX_UPLOAD_SIZE)
             else:
                 return md5_for_file(k.path)
         elif k.scheme == 's3':
@@ -919,7 +986,7 @@ class S3Connection(object):
         elif k.scheme == 's3':
             res = self._get_etag(k.netloc, k.path)
             if "-" in res:
-                raise Exception("md5 hashes not availiable from s3 for files over 5gb")
+                raise ValueError("md5 hashes not available from s3 for files that were uploaded as multipart (if over 5gb, there's no hope; if under, try copying it to itself to have S3 reset the etag)")
             return res
         else:
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)

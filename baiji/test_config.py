@@ -10,5 +10,7 @@ class TestAWS(unittest.TestCase):
         if not os.path.exists(bodylabs_file_path):
             raise unittest.SkipTest("Skipping test_credentials because ~/.bodylabs doesn't exist.")
         truth = yaml.load(bodylabs_file_path)
+        if 'AWS_ACCESS_KEY' not in truth or 'AWS_SECRET' not in truth:
+            raise unittest.SkipTest("Skipping test_credentials because ~/.bodylabs doesn't contain credentials.")
         self.assertEqual(credentials.key, truth['AWS_ACCESS_KEY'])
         self.assertEqual(credentials.secret, truth['AWS_SECRET'])

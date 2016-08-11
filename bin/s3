@@ -75,6 +75,7 @@ if __name__ == '__main__':
 
     subparsers['md5'].add_argument('key', type=str, help='key to get an md5sum for')
     subparsers['etag'].add_argument('key', type=str, help='key to get an etag for')
+    subparsers['etag'].add_argument('--fix', action='store_true', help='try to convert a multipart etag to a single part etag')
     subparsers['cat'].add_argument('key', type=str, help='key to print')
 
     subparsers['buckets'].add_argument('--create', type=str, default=None, help='create a new bucket')
@@ -139,7 +140,14 @@ if __name__ == '__main__':
         else:
             print "files DO NOT match"
             exit(-1)
-    if args.command == 'etag': print s3.etag(args.key)
+    if args.command == 'etag':
+        if args.fix:
+            etag = s3.etag(args.key)
+            if "-" in etag:
+                s3.cp(args.key, args.key, force=True)
+                print "etag updated from {} to {}".format(etag, s3.etag(args.key))
+        else:
+            print s3.etag(args.key)
     if args.command == 'cat': print s3.get_string(args.key)
     if args.command == 'buckets':
         if args.create:

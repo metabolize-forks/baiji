@@ -117,6 +117,41 @@ class TestS3Exists(TestAWSBase):
         self.assertEqual(mock_lookup.call_count, 3)
 
 
+class TestEtag(TestAWSBase):
+
+    @property
+    def true_md5(self):
+        import hashlib
+        with open(self.local_file) as f:
+            return hashlib.md5(f.read()).hexdigest()
+
+    def test_etag_remote_equals_local(self):
+        self.assertEqual(s3.etag(self.existing_remote_file), s3.etag(self.local_file))
+
+    def test_etag_local_equals_md5(self):
+        self.assertEqual(s3.etag(self.local_file), self.true_md5)
+
+    def test_etag_matches_small_file(self):
+        self.assertTrue(s3.etag_matches(self.local_file, self.true_md5))
+        self.assertFalse(s3.etag_matches(self.local_file, "FOO"))
+        self.assertFalse(s3.etag_matches(self.local_file, "FOO-42")) # multipart etag
+        self.assertTrue(s3.etag_matches(self.existing_remote_file, self.true_md5))
+        self.assertFalse(s3.etag_matches(self.existing_remote_file, "FOO"))
+        self.assertFalse(s3.etag_matches(self.existing_remote_file, "FOO-42")) # multipart etag
+
+
+    def test_etag_on_multipart_upload(self):
+        five_mb = 5 * 1024 * 1024
+        big_local_file = create_random_temporary_file(int(five_mb + 1024))
+        self.assertGreater(os.path.getsize(big_local_file), five_mb)
+        remote_multipart = self.remote_file("TestEtag/multipart.md")
+        s3.cp(big_local_file, remote_multipart, max_size=five_mb)
+        self.assertIn("-", s3.etag(remote_multipart))
+        self.assertNotIn("-", s3.etag(big_local_file))
+        self.assertTrue(s3.etag_matches(big_local_file, s3.etag(remote_multipart)))
+        os.remove(big_local_file)
+
+
 class TestS3(TestAWSBase):
 
     def test_s3_cp_local_to_local(self):
