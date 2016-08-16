@@ -554,11 +554,13 @@ class S3Connection(object):
 
     @property
     def conn(self):
-        from boto.s3.connection import S3Connection as BotoS3Connection
+        from boto.s3 import connect_to_region
         from boto.s3.connection import OrdinaryCallingFormat
-        from baiji.config import credentials
+        from baiji.config import credentials, region
         if not self._connected:
-            self._conn = BotoS3Connection(credentials.key, credentials.secret,
+            self._conn = connect_to_region(region,
+                                          aws_access_key_id=credentials.key,
+                                          aws_secret_access_key=credentials.secret,
                                           calling_format=OrdinaryCallingFormat(),
                                           suppress_consec_slashes=False)
             self._connected = True

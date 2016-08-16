@@ -76,6 +76,10 @@ class Credentials(object):
     def secret(self):
         return self._try(['AWS_SECRET_ACCESS_KEY', 'AWS_SECRET'], 'AWS_SECRET')
 
+
+# FIXME: POC HACK, read region from env
+region = os.getenv('AWS_REGION', 'us-east-1')
+
 credentials = Credentials()
 
 def is_available():
