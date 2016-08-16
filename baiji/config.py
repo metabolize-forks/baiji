@@ -78,7 +78,7 @@ class Credentials(object):
 
 
 # FIXME: POC HACK, read region from env
-region = os.getenv('AWS_REGION', 'us-east-1')
+region = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
 
 credentials = Credentials()
 

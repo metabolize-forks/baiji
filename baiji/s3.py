@@ -558,11 +558,12 @@ class S3Connection(object):
         from boto.s3.connection import OrdinaryCallingFormat
         from baiji.config import credentials, region
         if not self._connected:
-            self._conn = connect_to_region(region,
-                                          aws_access_key_id=credentials.key,
-                                          aws_secret_access_key=credentials.secret,
-                                          calling_format=OrdinaryCallingFormat(),
-                                          suppress_consec_slashes=False)
+            self._conn = connect_to_region(
+                            region,
+                            aws_access_key_id=credentials.key,
+                            aws_secret_access_key=credentials.secret,
+                            calling_format=OrdinaryCallingFormat(),
+                            suppress_consec_slashes=False)
             self._connected = True
         return self._conn
 
