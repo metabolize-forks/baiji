@@ -24,10 +24,10 @@ class Settings(object):
     def __init__(self):
         self._raw_data = None
 
-    def _load_aws_config_file(self, config_path):
+    def _load_aws_config_file(self, config_path, defaults):
         import ConfigParser
 
-        aws_config = ConfigParser.ConfigParser()
+        aws_config = ConfigParser.ConfigParser(defaults)
         aws_config.read([os.path.expanduser(config_path)])
 
         return aws_config
@@ -43,7 +43,7 @@ class Settings(object):
 
         # load credentials
         if os.path.isfile(os.path.expanduser(self.aws_credentials_path)):
-            aws_credential_config = self._load_aws_config_file(self.aws_credentials_path)
+            aws_credential_config = self._load_aws_config_file(self.aws_credentials_path, {})
 
             raw_data.update({
                 'AWS_ACCESS_KEY': aws_credential_config.get('default', 'aws_access_key_id'),
@@ -52,7 +52,7 @@ class Settings(object):
 
         # load settings
         if os.path.isfile(os.path.expanduser(self.aws_settings_path)):
-            aws_settings_config = self._load_aws_config_file(self.aws_settings_path)
+            aws_settings_config = self._load_aws_config_file(self.aws_settings_path, {'region': 'us-east-1'})
             raw_data.update({
                 'REGION': aws_settings_config.get('default', 'region'),
             })
@@ -94,10 +94,7 @@ class Settings(object):
 
     @property
     def region(self):
-        try:
-            return self._try(['AWS_DEFAULT_REGION'], 'REGION')
-        except AWSCredentialsMissing:
-            return 'us-east-1' # use us-east-1 by default
+        return self._try(['AWS_DEFAULT_REGION'], 'REGION')
 
 
 settings = Settings()
