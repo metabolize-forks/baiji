@@ -52,6 +52,8 @@ class Settings(object):
 
         # load settings
         if os.path.isfile(os.path.expanduser(self.aws_settings_path)):
+            # provide a default region here to prevent config parser to throw option error
+            # when the region is not specified in the config file
             aws_settings_config = self._load_aws_config_file(self.aws_settings_path, {'region': 'us-east-1'})
             raw_data.update({
                 'REGION': aws_settings_config.get('default', 'region'),
@@ -96,13 +98,15 @@ class Settings(object):
     def region(self):
         return self._try(['AWS_DEFAULT_REGION'], 'REGION')
 
+# Alias to avoid breaking changes
+Credentials = Settings
 
-settings = Settings()
+credentials = Credentials()
 
 def is_available():
     from baiji.util.reachability import internet_reachable
     try:
-        settings.load()
+        credentials.load()
     except AWSCredentialsMissing:
         return False
     return internet_reachable()
