@@ -18,10 +18,18 @@ class Credentials(object):
     '''
     environment_variable = 'BODYLABS_CREDENTIAL_FILE'
     default_path = '~/.bodylabs'
-    aws_cli_path = '~/.aws/credentials'
+    aws_credentials_path = '~/.aws/credentials'
 
     def __init__(self):
         self._raw_data = None
+
+    def _load_aws_config_file(self, config_path, defaults):
+        import ConfigParser
+
+        aws_config = ConfigParser.ConfigParser(defaults)
+        aws_config.read([os.path.expanduser(config_path)])
+
+        return aws_config
 
     def load(self):
         from baiji.util import yaml
@@ -32,13 +40,13 @@ class Credentials(object):
 
         raw_data = {}
 
-        if os.path.isfile(os.path.expanduser(self.aws_cli_path)):
-            import ConfigParser
-            aws_cli_config = ConfigParser.ConfigParser()
-            aws_cli_config.read([os.path.expanduser(self.aws_cli_path)])
+        # load credentials
+        if os.path.isfile(os.path.expanduser(self.aws_credentials_path)):
+            aws_credential_config = self._load_aws_config_file(self.aws_credentials_path, {})
+
             raw_data.update({
-                'AWS_ACCESS_KEY': aws_cli_config.get('default', 'aws_access_key_id'),
-                'AWS_SECRET': aws_cli_config.get('default', 'aws_secret_access_key'),
+                'AWS_ACCESS_KEY': aws_credential_config.get('default', 'aws_access_key_id'),
+                'AWS_SECRET': aws_credential_config.get('default', 'aws_secret_access_key'),
             })
 
         # If the two files have different keys, `.bodylabs` is used.
@@ -76,7 +84,38 @@ class Credentials(object):
     def secret(self):
         return self._try(['AWS_SECRET_ACCESS_KEY', 'AWS_SECRET'], 'AWS_SECRET')
 
+class Settings(Credentials):
+    '''
+    Amazon AWS settings object, including credentials
+
+    '''
+
+    aws_settings_path = '~/.aws/config'
+
+    def load(self):
+
+        if self._raw_data is not None:
+            return self._raw_data
+
+        raw_data = super(Settings, self).load()
+
+        # load settings and extend the raw data
+        if os.path.isfile(os.path.expanduser(self.aws_settings_path)):
+            # provide a default region here to prevent config parser to throw option error
+            # when the region is not specified in the config file
+            aws_settings_config = self._load_aws_config_file(self.aws_settings_path, {'region': 'us-east-1'})
+            raw_data.update({
+                'REGION': aws_settings_config.get('default', 'region'),
+            })
+
+        return raw_data
+
+    @property
+    def region(self):
+        return self._try(['AWS_DEFAULT_REGION'], 'REGION')
+
 credentials = Credentials()
+settings = Settings()
 
 def is_available():
     from baiji.util.reachability import internet_reachable
