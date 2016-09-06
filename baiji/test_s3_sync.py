@@ -50,8 +50,8 @@ class TestSync(TestAWSBase):
         s3.sync(self.remote_dir_to_sync, self.local_dir_to_sync)
         self.assertContentsAre(self.expected_remote_contents)
 
-    @mock.patch('baiji.s3.S3Connection.cp')
-    @mock.patch('baiji.s3.S3Connection.rm')
+    @mock.patch('baiji.connection.S3Connection.cp')
+    @mock.patch('baiji.connection.S3Connection.rm')
     def test_sync_file_same(self, rm, cp):
         # In these tests, we want to check that rm and cp are invoked only
         # when they should be, so we mock out cp and rm on a new instance of
@@ -72,8 +72,8 @@ class TestSync(TestAWSBase):
         self.assertFalse(cp.called)
         self.assertFalse(rm.called)
 
-    @mock.patch('baiji.s3.S3Connection.cp')
-    @mock.patch('baiji.s3.S3Connection.rm')
+    @mock.patch('baiji.connection.S3Connection.cp')
+    @mock.patch('baiji.connection.S3Connection.rm')
     def test_sync_file_only_src(self, rm, cp):
         from baiji.s3 import S3Connection
 
@@ -96,8 +96,8 @@ class TestSync(TestAWSBase):
         )
         self.assertFalse(rm.called)
 
-    @mock.patch('baiji.s3.S3Connection.cp')
-    @mock.patch('baiji.s3.S3Connection.rm')
+    @mock.patch('baiji.connection.S3Connection.cp')
+    @mock.patch('baiji.connection.S3Connection.rm')
     def test_sync_file_only_dst(self, rm, cp):
         from baiji.s3 import S3Connection
 
@@ -128,8 +128,8 @@ class TestSync(TestAWSBase):
         self.assertFalse(cp.called)
         self.assertFalse(rm.called)
 
-    @mock.patch('baiji.s3.S3Connection.cp')
-    @mock.patch('baiji.s3.S3Connection.rm')
+    @mock.patch('baiji.connection.S3Connection.cp')
+    @mock.patch('baiji.connection.S3Connection.rm')
     def test_sync_file_exists_but_outdated(self, rm, cp):
         from baiji.s3 import S3Connection
 

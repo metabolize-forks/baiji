@@ -87,7 +87,7 @@ class TestAWSBase(unittest.TestCase):
 
 class TestS3Exists(TestAWSBase):
 
-    @mock.patch('baiji.s3.S3Connection._lookup')
+    @mock.patch('baiji.connection.S3Connection._lookup')
     def test_s3_exists_retries_if_not_found_at_first(self, mock_lookup):
         import warnings
         from baiji.exceptions import EventualConsistencyWarning
@@ -103,14 +103,14 @@ class TestS3Exists(TestAWSBase):
             self.assertEqual(str(w[-1].message), "S3 is behaving in an eventually consistent way in s3.exists(s3://foo) -- it took 3 attempts to locate the key")
         self.assertEqual(mock_lookup.call_count, 3)
 
-    @mock.patch('baiji.s3.S3Connection._lookup')
+    @mock.patch('baiji.connection.S3Connection._lookup')
     def test_s3_exists_does_not_retry_if_found_immidiately(self, mock_lookup):
         mock_key = "all_we_care_is_that_it's not None"
         mock_lookup.return_value = mock_key
         self.assertTrue(s3.exists('s3://foo'))
         self.assertEqual(mock_lookup.call_count, 1)
 
-    @mock.patch('baiji.s3.S3Connection._lookup')
+    @mock.patch('baiji.connection.S3Connection._lookup')
     def test_s3_exists_return_false_if_the_file_never_shows_up(self, mock_lookup):
         mock_lookup.return_value = None
         self.assertFalse(s3.exists('s3://foo'))
@@ -176,13 +176,13 @@ class TestS3(TestAWSBase):
         s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'DL'))
         self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'DL', s3.path.basename(self.existing_remote_file))))
 
-    @mock.patch('baiji.s3.S3CopyOperation.ensure_integrity')
+    @mock.patch('baiji.copy.S3CopyOperation.ensure_integrity')
     def test_s3_cp_download_corrupted_recover_in_one_retry(self, ensure_integrity_mock):
-        from baiji.s3 import get_transient_error_class
+        from baiji.exceptions import get_transient_error_class
         ensure_integrity_mock.side_effect = [get_transient_error_class()('etag does not match'), None]
         s3.cp(self.existing_remote_file, self.tmp_dir, force=True)
 
-    @mock.patch('baiji.s3.S3CopyOperation.ensure_integrity')
+    @mock.patch('baiji.copy.S3CopyOperation.ensure_integrity')
     def test_s3_cp_download_lookup_recover_in_one_retry(self, ensure_integrity_mock):
         from baiji.exceptions import KeyNotFound
         ensure_integrity_mock.side_effect = [KeyNotFound('key not found'), None]
@@ -190,7 +190,7 @@ class TestS3(TestAWSBase):
 
     @mock.patch('boto.s3.key.Key.get_contents_to_file')
     def test_downloads_from_s3_are_atomic_under_truncation(self, download_mock):
-        from baiji.s3 import get_transient_error_class
+        from baiji.exceptions import get_transient_error_class
         def write_fake_truncated_file(fp, **kwargs): # just capturing whatever is thrown at us: pylint: disable=unused-argument
             fp.write("12345")
         download_mock.side_effect = write_fake_truncated_file
@@ -199,7 +199,7 @@ class TestS3(TestAWSBase):
             s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'truncated.foo'), validate=True)
         self.assertFalse(os.path.exists(os.path.join(self.tmp_dir, 'truncated.foo')))
 
-    @mock.patch('baiji.s3.S3CopyOperation.ensure_integrity')
+    @mock.patch('baiji.copy.S3CopyOperation.ensure_integrity')
     def test_downloads_from_s3_are_atomic_under_exceptions(self, download_mock):
         download_mock.side_effect = ValueError()
         # Now when the call to download the file is made, an exception will be thrown.
@@ -210,10 +210,10 @@ class TestS3(TestAWSBase):
             s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'erroneous.foo'), validate=True)
         self.assertFalse(os.path.exists(os.path.join(self.tmp_dir, 'erroneous.foo')))
 
-    @mock.patch('baiji.s3.S3CopyOperation.ensure_integrity')
+    @mock.patch('baiji.copy.S3CopyOperation.ensure_integrity')
     def test_s3_cp_download_corrupted_raise_transient_error_after_retried_once(self, ensure_integrity_mock):
 
-        from baiji.s3 import get_transient_error_class
+        from baiji.exceptions import get_transient_error_class
 
         ensure_integrity_mock.side_effect = get_transient_error_class()('etag does not match')
 

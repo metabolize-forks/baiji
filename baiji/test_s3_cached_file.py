@@ -270,14 +270,14 @@ class TestCachedFile(TestAWSBase):
         self.assertEquals(ctx.exception.errno, errno.EISDIR)
         self.assertIn('Is a directory:', ctx.exception.strerror)
 
-    @mock.patch('baiji.s3.CachedFile.upload')
+    @mock.patch('baiji.cached_file.CachedFile.upload')
     def test_s3_open_write_calls_upload(self, upload):
         remote_file_name = self.remote_file("write_test_1")
         with s3.open(remote_file_name, 'w'):
             self.assertFalse(upload.called)
         self.assertTrue(upload.called)
 
-    @mock.patch('baiji.s3.CachedFile.upload')
+    @mock.patch('baiji.cached_file.CachedFile.upload')
     def test_s3_open_write_does_not_upload_if_exception_raised(self, upload):
         remote_file_name = self.remote_file("write_test_1")
         try:
@@ -292,7 +292,7 @@ class TestCachedFile(TestAWSBase):
             pass
         self.assertTrue(upload.called)
 
-    @mock.patch('baiji.s3.CachedFile.upload')
+    @mock.patch('baiji.cached_file.CachedFile.upload')
     def test_s3_open_read_does_not_call_upload(self, upload):
         self.assert_s3_exists(self.remote_file("openable"))
         with s3.open(self.remote_file("openable"), 'r'):

@@ -5,4 +5,4 @@
 #
 # See https://www.python.org/dev/peps/pep-0420/#namespace-packages-today
 
-__version__ = '2.4.0'
+__version__ = '2.5.0'
