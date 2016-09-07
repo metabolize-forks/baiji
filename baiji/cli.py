@@ -150,6 +150,12 @@ class BucketsCommand(cli.Application):
         else:
             print "\n".join(s3.list_buckets())
 
+class VersionCommand(cli.Application):
+    DESCRIPTION = "print version and exit"
+    def main(self):
+        from baiji import package_version
+        print package_version.__version__
+
 class IsCommand(cli.Application):
     DESCRIPTION = "check that two files are the same"
     def main(self, key, other_key):
