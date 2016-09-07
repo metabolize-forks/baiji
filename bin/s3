@@ -20,7 +20,6 @@ S3App.subcommand("md5", "baiji.cli.MD5Command")
 S3App.subcommand("etag", "baiji.cli.EtagCommand")
 S3App.subcommand("cat", "baiji.cli.CatCommand")
 S3App.subcommand("buckets", "baiji.cli.BucketsCommand")
-S3App.subcommand("version", "baiji.cli.VersionCommand")
 S3App.subcommand("is", "baiji.cli.IsCommand")
 
 if __name__ == '__main__':
