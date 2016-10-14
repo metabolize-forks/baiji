@@ -109,18 +109,24 @@ class Settings(object):
             raise AWSCredentialsMissing("Missing AWS credentials")
         return raw_data
 
+    def _get(self, key, default=None):
+        config = self.load()
+        if key not in config and default is None:
+            raise AWSCredentialsMissing('AWS configuration is missing {}.'.format(key))
+        return config.get(key, default)
+
     def _try(self, var_list, key, default=None):
         for var in var_list:
             val = os.getenv(var, None)
-            if val:
+            if val is not None:
                 return val
         try:
-            return self.load()[key]
-        except KeyError:
+            return self._get(key, default)
+        except AWSCredentialsMissing:
             if default is not None:
                 return default
             else:
-                raise AWSCredentialsMissing('AWS configuration is missing {}.'.format(key))
+                raise
 
     @property
     def key(self):
