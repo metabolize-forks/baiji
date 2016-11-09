@@ -84,7 +84,7 @@ class TestAWS(unittest.TestCase):
 
     def test_exception_thrown_if_dot_bodylabs_malformed(self):
         override = ConfigFileOverride()
-        override.dot_bodylabs = FakeConfigFile("")
+        override.dot_bodylabs = FakeConfigFile("This is a random text file")
         with override:
             with self.assertRaisesRegexp(AWSCredentialsMissing, "Unable to read AWS configuration file"):
                 settings = Settings()
@@ -116,6 +116,15 @@ class TestAWS(unittest.TestCase):
 
     def test_just_a_aws_credentials_file(self):
         override = ConfigFileOverride()
+        override.aws_credentials = FakeConfConfigFile({'aws_access_key_id': 'abc', 'aws_secret_access_key': 'cba'})
+        with override:
+            settings = Settings()
+            self.assertEqual(settings.key, 'abc')
+            self.assertEqual(settings.secret, 'cba')
+
+    def test_empty_dot_bodylabs_is_fine(self):
+        override = ConfigFileOverride()
+        override.dot_bodylabs = FakeConfigFile('')
         override.aws_credentials = FakeConfConfigFile({'aws_access_key_id': 'abc', 'aws_secret_access_key': 'cba'})
         with override:
             settings = Settings()

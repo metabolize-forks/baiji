@@ -22,6 +22,8 @@ class YAMLConfigFile(ConfigFile):
     def load(self):
         from baiji.util import yaml
         data = yaml.load(self.path)
+        if data is None:
+            return {}
         if not isinstance(data, dict):
             raise AWSCredentialsMissing("Unable to read AWS configuration file: {}".format(self.path))
         return data
