@@ -251,6 +251,14 @@ class TestS3(TestAWSBase):
         with self.assertRaisesRegexp(s3.KeyNotFound, "Error copying"):
             s3.cp(os.path.join(self.tmp_dir, "definitely_not_there.foo"), self.tmp_dir)
 
+    def test_s3_cp_errors_without_permissions(self):
+        from baiji.util.shutillib import mkdir_p
+        locked_dir = os.path.join(self.tmp_dir, 'locked')
+        mkdir_p(locked_dir)
+        os.chmod(locked_dir, 666)
+        with self.assertRaises(s3.S3Exception):
+            s3.cp(self.local_file, os.path.join(locked_dir, 'nope.txt'))
+        self.assertFalse(os.path.exists(os.path.join(locked_dir, 'nope.txt')))
 
     def test_s3_cp_skip_existing_files_without_raise_exceptions(self):
         import warnings
@@ -474,6 +482,44 @@ class TestEncryption(TestAWSBase):
         self.assertFalse(s3.info(self.remote_file("unencrypted.txt"))['encrypted'])
         s3.cp(self.remote_file("unencrypted.txt"), self.remote_file("encrypted.txt"))
         self.assertTrue(s3.info(self.remote_file("encrypted.txt"))['encrypted'])
+
+
+class TestDirectoriesOnS3(TestAWSBase):
+    def test_downloading_a_directory_with_slash(self):
+        s3.touch(self.remote_file("foo/"))
+        with self.assertRaises(ValueError):
+            s3.cp(self.remote_file("foo/"), os.path.join(self.tmp_dir, "foo/"))
+        self.assertEqual(len(os.listdir(self.tmp_dir)), 0)
+
+    def test_downloading_a_directory_without_slash_that_is_also_a_file(self):
+        s3.touch(self.remote_file("foo"))
+        s3.touch(self.remote_file("foo/theres_a_file_in_here.txt"))
+        # This should work, so that you have some way to download a legit file that's also a dir
+        s3.cp(self.remote_file("foo"), os.path.join(self.tmp_dir, "foo"))
+        self.assertEqual(len(os.listdir(self.tmp_dir)), 1)
+        # But this will fail, as there's already a file in place so we can't make the dir "foo"
+        with self.assertRaises(s3.S3Exception):
+            s3.cp(self.remote_file("foo/theres_a_file_in_here.txt"), os.path.join(self.tmp_dir, "foo/"))
+
+    def test_downloading_an_implicit_directory_with_slash(self):
+        s3.touch(self.remote_file("foo/theres_a_file_in_here.txt"))
+        with self.assertRaises(ValueError):
+            s3.cp(self.remote_file("foo/"), os.path.join(self.tmp_dir, "foo/"))
+        self.assertEqual(len(os.listdir(self.tmp_dir)), 0)
+
+    def test_uploading_a_directory_with_slash(self):
+        from baiji.util.shutillib import mkdir_p
+        mkdir_p(os.path.join(self.tmp_dir, "foo"))
+        with self.assertRaises(ValueError):
+            s3.cp(os.path.join(self.tmp_dir, "foo/"), self.remote_file("foo/"))
+        self.assertFalse(s3.exists(self.remote_file("")))
+
+    def test_uploading_a_directory_without_slash(self):
+        from baiji.util.shutillib import mkdir_p
+        mkdir_p(os.path.join(self.tmp_dir, "foo"))
+        with self.assertRaises(ValueError):
+            s3.cp(os.path.join(self.tmp_dir, "foo"), self.remote_file("foo"))
+        self.assertFalse(s3.exists(self.remote_file("")))
 
 
 class TestS3ConnectionPersistence(unittest.TestCase):

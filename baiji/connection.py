@@ -514,9 +514,19 @@ class S3Connection(object):
         update: When True, update dst if it exists but contents do not match.
         delete: When True, remove dst if src does not exist. When False, raise
           an error if src does not exist.
+
+        As this function is a file by file sync, not applicable to directories
+        nor recursive, src being a directory is best treated as mkdir_p(dst).
         '''
         from baiji.util.console import create_conditional_print
         print_verbose = create_conditional_print(progress)
+
+        if path.isdirlike(src):
+            print_verbose('{} is a directory'.format(src))
+            if path.islocal(dst): # for remote paths, don't bother creating dirs; they don't really exist.
+                from baiji.util.shutillib import mkdir_p
+                mkdir_p(dst)
+            return
 
         src_exists = self.exists(src)
         if not delete and not src_exists:

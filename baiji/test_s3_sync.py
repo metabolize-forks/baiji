@@ -29,6 +29,9 @@ class TestSync(TestAWSBase):
         self.expected_local_contents = s3.ls(self.local_dir_to_sync)
         self.expected_remote_contents = [x.replace(self.s3_path+'foo/', '') for x in s3.ls(self.remote_dir_to_sync)]
 
+        # Annoying directory marker that some clients create; create after making contents lists
+        s3.touch(s3.path.join(self.s3_test_location, 'foo/'))
+
     def create_random_file_at(self, bases, path):
         from baiji.util.testing import random_data
         data = random_data()
@@ -38,7 +41,7 @@ class TestSync(TestAWSBase):
 
     def assertContentsAre(self, expected_contents):
         self.assertSetEqual(set(s3.ls(self.local_dir_to_sync)), set(expected_contents))
-        self.assertSetEqual(set([x.replace(self.s3_path+'foo/', '') for x in s3.ls(self.remote_dir_to_sync)]), set(expected_contents))
+        self.assertSetEqual(set([x.replace(self.s3_path+'foo/', '') for x in s3.ls(self.remote_dir_to_sync) if x != self.s3_path+'foo/']), set(expected_contents))
         # TODO files are equal:
 
 

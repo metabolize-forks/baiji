@@ -13,6 +13,7 @@ class S3CopyOperation(object):
             self.connection = connection
             self.parsed = path.parse(key)
             self.remote_path = None # value here will be set by the path setting, this just satisfies lint
+            self.isdir = path.isdirlike(key)
             self.path = self.parsed.path
             if not (self.path.startswith(path.sep) or re.match(r'^[a-zA-Z]:', self.path)):
                 self.path = path.sep + self.path
@@ -75,7 +76,10 @@ class S3CopyOperation(object):
         self.dst = self.CopyableKey(dst, connection)
         self.task = (self.src.scheme, self.dst.scheme)
 
-        if path.isdirlike(self.dst.path):
+        if self.src.isdir:
+            raise ValueError("{} is a directory (not copied; use recursive mode to copy directories".format(self.src.raw))
+
+        if self.dst.isdir:
             self.dst.path = os.path.join(self.dst.path, os.path.basename(self.src.path))
 
         # DEFAULTS:
@@ -260,9 +264,14 @@ class S3CopyOperation(object):
                 self.remote_copy()
             else:
                 raise InvalidSchemeException("Copy for URI Scheme %s to %s is not implemented" % self.task)
-
-        except (IOError, KeyNotFound):
-            raise KeyNotFound("Error copying %s to %s: Source doesn't exist" % (self.src.uri, self.dst.uri))
+        except KeyNotFound:
+            raise KeyNotFound("Error copying {} to {}: Source doesn't exist".format(self.src.uri, self.dst.uri))
+        except IOError as e:
+            import errno
+            if e.errno == errno.ENOENT:
+                raise KeyNotFound("Error copying {} to {}: Source doesn't exist".format(self.src.uri, self.dst.uri))
+            else:
+                raise S3Exception("Error copying {} to {}: {}".format(self.src.uri, self.dst.uri, e))
         except S3ResponseError as e:
             if e.status == 403:
                 raise S3Exception("HTTP Error 403: Permission Denied on {}".format(" or ".join([x.uri for x in [self.src, self.dst] if x.is_s3])))
