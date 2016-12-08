@@ -3,7 +3,19 @@ from baiji import s3
 
 # We intentionally override main() with different arguments than plumbum.cli.Application pylint: disable=arguments-differ
 
-class ListCommand(cli.Application):
+class BaijiCommand(cli.Application):
+    verbose = False
+    @cli.switch(['-v', '--verbose'], argtype=None, help='be noisy')
+    def set_verbose(self):
+        import logging
+        import boto
+        self.verbose = True
+        logging.getLogger('boto').setLevel(logging.DEBUG)
+        logging.getLogger('botocore').setLevel(logging.DEBUG)
+        boto.set_stream_logger('boto', level=logging.DEBUG)
+
+
+class ListCommand(BaijiCommand):
     DESCRIPTION = "list files on s3"
     uri = cli.Flag(["-B", "--uri"], help='This option does nothing. It used to return URIs instead of paths, but this is now the default.')
     detail = cli.Flag(['-l', '--detail'], help='print details, like `ls -l`')
@@ -25,13 +37,13 @@ class ListCommand(cli.Application):
             print e
             return 1
 
-class InfoCommand(cli.Application):
+class InfoCommand(BaijiCommand):
     DESCRIPTION = "info for file on s3"
     def main(self, key):
         for k, v in sorted(s3.info(key).items(), key=lambda x: x[0]):
             print "%s: %s" % (k, v)
 
-class RemoveCommand(cli.Application):
+class RemoveCommand(BaijiCommand):
     DESCRIPTION = "delete files on s3"
     recursive = cli.Flag(['-r', '--recursive'], help='remove everything below key')
     force = cli.Flag(['-f', '--force'], help="don't prompt for confirmation on recursive rm")
@@ -41,7 +53,7 @@ class RemoveCommand(cli.Application):
         else:
             s3.rm(key)
 
-class CopyCommand(cli.Application):
+class CopyCommand(BaijiCommand):
     DESCRIPTION = "copy files from or to s3"
     force = cli.Flag(['-f', '--force'], help='overwrite existing files')
     skip = cli.Flag(['-s', '--skip'], help='skip existing files when copy')
@@ -69,7 +81,7 @@ class CopyCommand(cli.Application):
         else:
             s3.cp(src, dst, **kwargs)
 
-class MoveCommand(cli.Application):
+class MoveCommand(BaijiCommand):
     DESCRIPTION = "move files from or to s3"
     force = cli.Flag(['-f', '--force'], help='overwrite existing files')
     progress = cli.Flag(['-P', '--progress'], help='show progress bar')
@@ -78,12 +90,12 @@ class MoveCommand(cli.Application):
     def main(self, src, dst):
         s3.mv(src, dst, force=self.force, progress=self.progress, encrypt=self.encrypt, gzip=self.gzip)
 
-class TouchCommand(cli.Application):
+class TouchCommand(BaijiCommand):
     DESCRIPTION = "touch a file on s3"
     def main(self, key):
         s3.touch(key)
 
-class SyncCommand(cli.Application):
+class SyncCommand(BaijiCommand):
     DESCRIPTION = "move a directory tree from or to s3, a la rsync"
     progress = cli.Flag(['-P', '--progress'], help='show progress')
     guess_content_type = cli.Flag(['-g', '--guess-content-type'], help='Guess content type of file')
@@ -102,25 +114,25 @@ class SyncCommand(cli.Application):
         }
         s3.sync(src, dst, **kwargs)
 
-class ExistsCommand(cli.Application):
+class ExistsCommand(BaijiCommand):
     DESCRIPTION = "check if a file exists on s3"
     retries = cli.SwitchAttr('--retries', int, help='how many times to retry', default=3)
     def main(self, key):
         if not s3.exists(key, retries_allowed=self.retries):
             return -1
 
-class URLCommand(cli.Application):
+class URLCommand(BaijiCommand):
     DESCRIPTION = "generate a temporary url"
     expire = cli.SwitchAttr('--expire', int, help='number of seconds before url expires', default=86400)
     def main(self, key):
         print s3.get_url(key, self.expire)
 
-class MD5Command(cli.Application):
+class MD5Command(BaijiCommand):
     DESCRIPTION = "get an md5sum"
     def main(self, key):
         print s3.md5(key)
 
-class EtagCommand(cli.Application):
+class EtagCommand(BaijiCommand):
     DESCRIPTION = "get an etag. For files under 5gb, this is a md5sum, otherwise it is merely unique."
     fix = cli.Flag('--fix', help='try to convert a multipart etag to a single part etag')
     def main(self, key):
@@ -132,12 +144,12 @@ class EtagCommand(cli.Application):
         else:
             print s3.etag(key)
 
-class CatCommand(cli.Application):
+class CatCommand(BaijiCommand):
     DESCRIPTION = "print contents of key to stdout"
     def main(self, key):
         print s3.get_string(key)
 
-class BucketsCommand(cli.Application):
+class BucketsCommand(BaijiCommand):
     DESCRIPTION = "tools for working with buckets"
     create = cli.SwitchAttr('--create', str, help='create a new bucket')
     info = cli.SwitchAttr('--info', str, help='get info on a bucket')
@@ -150,13 +162,13 @@ class BucketsCommand(cli.Application):
         else:
             print "\n".join(s3.list_buckets())
 
-class VersionCommand(cli.Application):
+class VersionCommand(BaijiCommand):
     DESCRIPTION = "print version and exit"
     def main(self):
         from baiji import package_version
         print package_version.__version__
 
-class IsCommand(cli.Application):
+class IsCommand(BaijiCommand):
     DESCRIPTION = "check that two files are the same"
     def main(self, key, other_key):
         if s3.md5(key) == s3.md5(other_key):
