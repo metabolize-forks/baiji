@@ -61,6 +61,12 @@ def parse(s):
         raise ValueError('s3 urls must specify the bucket')
     return ParseResult(scheme, netloc, s3path, params=None, query=None, fragment=None) # pylint: disable=too-many-function-args,unexpected-keyword-arg
 
+def abspath(s):
+    parsed_path = parse(s)
+    if parsed_path.scheme == 'file':
+        return parsed_path.path
+    return parsed_path.geturl()
+
 def islocal(s):
     '''
     Check if a path is local. Just parses and checks format, _does not_ check for existence of the file.

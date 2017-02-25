@@ -262,6 +262,12 @@ class S3Connection(object):
         import fnmatch
         import functools
         import itertools
+        from glob import glob as local_glob
+        if path.islocal(prefix+pattern):
+            return (
+                path.abspath(filepath)
+                for filepath in local_glob(prefix+pattern)
+            )
         predicate = functools.partial(fnmatch.fnmatch, pat=prefix + pattern)
         listing = self.ls(prefix, return_full_urls=True)
         return itertools.ifilter(predicate, listing)
