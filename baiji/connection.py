@@ -247,7 +247,7 @@ class S3Connection(object):
         else:
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)
 
-    def glob(self, prefix, pattern):
+    def glob(self, prefix, pattern=None):
         '''
         Given a path prefix and a pattern, iterate over matching paths.
 
@@ -263,7 +263,13 @@ class S3Connection(object):
         import functools
         import itertools
         from glob import glob as local_glob
-        if path.islocal(prefix+pattern):
+        if pattern is None:
+            new_prefix = prefix
+            for wildcard in ['*', '?', '[']:
+                new_prefix = new_prefix.split(wildcard)[0]
+            pattern = prefix[len(new_prefix):]
+            prefix = new_prefix
+        if path.islocal(prefix):
             return (
                 path.abspath(filepath)
                 for filepath in local_glob(prefix+pattern)
