@@ -265,7 +265,15 @@ class S3CopyOperation(object):
             else:
                 raise InvalidSchemeException("Copy for URI Scheme %s to %s is not implemented" % self.task)
         except KeyNotFound:
-            raise KeyNotFound("Error copying {} to {}: Source doesn't exist".format(self.src.uri, self.dst.uri))
+            if self.dst.is_s3:
+                try:
+                    _ = self.dst.bucket
+                except KeyNotFound:
+                    raise  KeyNotFound("Error copying {} to {}: Destination bucket doesn't exist".format(self.src.uri, self.dst.uri))
+            if not self.src.exists():
+                raise KeyNotFound("Error copying {} to {}: Source doesn't exist".format(self.src.uri, self.dst.uri))
+            else:
+                raise KeyNotFound("Error copying {} to {}: Destination doesn't exist".format(self.src.uri, self.dst.uri))
         except IOError as e:
             import errno
             if e.errno == errno.ENOENT:
