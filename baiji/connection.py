@@ -66,7 +66,7 @@ class S3Connection(object):
 
         return bucket.lookup(key)
 
-    def cp(self, key_or_file_from, key_or_file_to, force=False, progress=False, policy=None, preserve_acl=False, encoding=None, encrypt=True, gzip=False, content_type=None, guess_content_type=False, metadata=None, skip=False, validate=True, max_size=None):
+    def cp(self, key_or_file_from, key_or_file_to, force=False, progress=False, policy=None, preserve_acl=False, encoding=None, encrypt=True, gzip=False, content_type=None, guess_content_type=False, metadata=None, skip=False, validate=True, max_size=None, version=None):
         """
         Copy file to or from AWS S3
 
@@ -95,6 +95,7 @@ class S3Connection(object):
         op.skip = skip
         op.validate = validate
         op.max_size = max_size
+        op.version = version
 
         if guess_content_type:
             op.guess_content_type()
@@ -292,6 +293,7 @@ class S3Connection(object):
             result['encrypted'] = bool(remote_object.encrypted)
             result['acl'] = remote_object.get_acl()
             result['owner'] = remote_object.owner
+            result['version_id'] = remote_object.version_id
         else:
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)
         return result

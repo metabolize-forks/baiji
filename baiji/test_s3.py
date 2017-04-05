@@ -176,6 +176,27 @@ class TestS3(TestAWSBase):
         s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'DL'))
         self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'DL', s3.path.basename(self.existing_remote_file))))
 
+    def test_s3_cp_download_versioned_success_with_valid_version_id(self):
+        version_id = s3.info(self.existing_remote_file)['version_id']
+        s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version=version_id)
+        self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'DL', 'TEST.foo')))
+
+    def test_s3_cp_download_versioned_raise_key_not_found_with_unknown_version_id(self):
+
+        from baiji.exceptions import KeyNotFound
+        unknown_version_id = '5elgojhtA8BGJerqfbciN78eU74SJ9mX'
+        # test raise KeyNotFound with unknown versionId
+        with self.assertRaises(KeyNotFound):
+            s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version=unknown_version_id)
+
+    def test_s3_cp_download_versioned_raise_invalid_version_id_with_bad_version_id(self):
+        from baiji.exceptions import InvalidVersionID
+
+        invalid_version_id = '1111'
+        # test raise S3ResponseError with invalid versionId
+        with self.assertRaises(InvalidVersionID):
+            s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version=invalid_version_id)
+
     @mock.patch('baiji.copy.S3CopyOperation.ensure_integrity')
     def test_s3_cp_download_corrupted_recover_in_one_retry(self, ensure_integrity_mock):
         from baiji.exceptions import get_transient_error_class

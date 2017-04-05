@@ -51,19 +51,35 @@ class S3CopyOperation(object):
             return self.connection.etag(self.uri)
         def rm(self):
             return self.connection.rm(self.uri)
-        def lookup(self):
+        def lookup(self, version_id=None):
+            from boto.exception import S3ResponseError
+            from baiji.exceptions import InvalidVersionID
+
             if self.is_file:
                 raise ValueError("S3CopyOperation.CopyableKey.lookup called for local file")
-            key = self.bucket.lookup(self.remote_path)
+
+            key = None
+
+            try:
+                key = self.bucket.get_key(self.remote_path, version_id=version_id)
+            except S3ResponseError as e:
+                if e.status == 400:
+                    raise InvalidVersionID("Invalid versionID %s" % version_id)
+                else:
+                    raise e
+
             if not key:
                 raise KeyNotFound("Error finding %s on s3: doesn't exist" % (self.uri))
             return key
-        def create(self):
+
+        def create(self, version_id=None):
             if self.is_file:
                 raise ValueError("S3CopyOperation.CopyableKey.create called for local file")
             from boto.s3.key import Key
             key = Key(self.bucket)
             key.key = self.remote_path
+            key.version_id = version_id
+
             return key
 
     def __init__(self, src, dst, connection):
@@ -99,6 +115,8 @@ class S3CopyOperation(object):
         self._retries = 0
 
         self.file_size = None
+        # s3 version
+        self._version = None
 
     @property # read only
     def retries_made(self):
@@ -112,6 +130,14 @@ class S3CopyOperation(object):
         if val and self.dst.is_file:
             raise ValueError("Policy only allowed when copying to s3")
         self._policy = val  # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
+
+    @property
+    def version(self):
+        return self._version
+    @version.setter
+    def version(self, val):
+        self._version = val  # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
+
 
     @property
     def preserve_acl(self):
@@ -333,7 +359,7 @@ class S3CopyOperation(object):
     def upload_direct(self):
         import math
         from baiji.util.with_progressbar import FileTransferProgressbar
-        key = self.dst.create()
+        key = self.dst.create(version_id=self.version)
         for k, v in self.metadata.items():
             key.set_metadata(k, v)
         with FileTransferProgressbar(supress=(not self.progress)) as cb:
@@ -356,7 +382,7 @@ class S3CopyOperation(object):
         # twice by the same process.
         tf = tempfile.NamedTemporaryFile(delete=False)
         try:
-            key = self.src.lookup()
+            key = self.src.lookup(version_id=self.version)
 
             with FileTransferProgressbar(supress=(not self.progress)) as cb:
                 key.get_contents_to_file(tf, cb=cb)
@@ -380,7 +406,6 @@ class S3CopyOperation(object):
                 self.download()
             else:
                 raise
-
         finally:
             self.connection.rm(tf.name)
 

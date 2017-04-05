@@ -37,3 +37,6 @@ class S3Warning(RuntimeWarning):
 
 class EventualConsistencyWarning(S3Warning):
     pass
+
+class InvalidVersionID(S3Exception):
+    pass
