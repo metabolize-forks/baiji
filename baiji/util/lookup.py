@@ -7,7 +7,6 @@ def get_versioned_key_remote(bucket, key_name, version_id=None):
     from baiji.exceptions import InvalidVersionID
 
     key = None
-
     try:
         key = bucket.get_key(key_name, version_id=version_id)
     except S3ResponseError as e:
@@ -15,7 +14,4 @@ def get_versioned_key_remote(bucket, key_name, version_id=None):
             raise InvalidVersionID("Invalid versionID %s" % version_id)
         else:
             raise e
-
     return key
-
-
