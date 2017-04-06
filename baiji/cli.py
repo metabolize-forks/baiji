@@ -20,17 +20,19 @@ class ListCommand(BaijiCommand):
     uri = cli.Flag(["-B", "--uri"], help='This option does nothing. It used to return URIs instead of paths, but this is now the default.')
     detail = cli.Flag(['-l', '--detail'], help='print details, like `ls -l`')
     shallow = cli.Flag("--shallow", help='process key names hierarchically and return only immediate "children" (like ls, instead of like find)')
+    list_versions = cli.Flag(['--list-versions'], help='print details, like `ls -l`')
+
     def main(self, key):
         if self.uri:
             print "-B and --uri are deprecated options"
         try:
-            keys = s3.ls(key, return_full_urls=True, require_s3_scheme=True, shallow=self.shallow)
+            keys = s3.ls(key, return_full_urls=True, require_s3_scheme=True, shallow=self.shallow, list_versions=self.list_versions)
             if self.detail:
                 from baiji.util.console import sizeof_format_human_readable
                 for key in keys:
                     info = s3.info(key)
                     enc = " enc" if info['encrypted'] else "    "
-                    print "%s\t%s%s\t%s" % (sizeof_format_human_readable(info['size']), info['last_modified'], enc, key.encode('utf-8'),)
+                    print "%s\t%s%s\t%s\t%s" % (sizeof_format_human_readable(info['size']), info['last_modified'], enc, key.encode('utf-8'), info['version_id'])
             else:
                 print u"\n".join(keys).encode('utf-8')
         except s3.InvalidSchemeException as e:

@@ -202,7 +202,7 @@ class S3Connection(object):
             if not quiet:
                 print "[deleted] %s" % url
 
-    def ls(self, s3prefix, return_full_urls=False, require_s3_scheme=False, shallow=False, followlinks=False):
+    def ls(self, s3prefix, return_full_urls=False, require_s3_scheme=False, shallow=False, followlinks=False, list_versions=False):
         '''
         List files on AWS S3
         prefix is given as an S3 url: ``s3://bucket-name/path/to/dir``.
@@ -229,7 +229,13 @@ class S3Connection(object):
                 clean_paths = lambda x: "s3://" + k.netloc + path.sep + x.name
             else:
                 clean_paths = lambda x: path.sep + x.name
-            return itertools.imap(clean_paths, self._bucket(k.netloc).list(prefix=prefix, delimiter=delimiter))
+
+            if list_versions:
+                result_list_iterator = self._bucket(k.netloc).list_versions(prefix=prefix, delimiter=delimiter)
+            else:
+                result_list_iterator = self._bucket(k.netloc).list(prefix=prefix, delimiter=delimiter)
+
+            return itertools.imap(clean_paths, result_list_iterator)
         elif k.scheme == 'file':
             if require_s3_scheme:
                 raise InvalidSchemeException('URI should begin with s3://')
