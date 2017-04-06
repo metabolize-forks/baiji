@@ -66,7 +66,7 @@ class S3Connection(object):
 
         return bucket.lookup(key)
 
-    def cp(self, key_or_file_from, key_or_file_to, force=False, progress=False, policy=None, preserve_acl=False, encoding=None, encrypt=True, gzip=False, content_type=None, guess_content_type=False, metadata=None, skip=False, validate=True, max_size=None, version=None):
+    def cp(self, key_or_file_from, key_or_file_to, force=False, progress=False, policy=None, preserve_acl=False, encoding=None, encrypt=True, gzip=False, content_type=None, guess_content_type=False, metadata=None, skip=False, validate=True, max_size=None, version_id=None):
         """
         Copy file to or from AWS S3
 
@@ -95,7 +95,7 @@ class S3Connection(object):
         op.skip = skip
         op.validate = validate
         op.max_size = max_size
-        op.version = version
+        op.version_id = version_id
 
         if guess_content_type:
             op.guess_content_type()
