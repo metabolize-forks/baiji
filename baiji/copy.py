@@ -419,7 +419,17 @@ class S3CopyOperation(object):
         meta['Content-Encoding'] = key.content_encoding
         meta['Content-Type'] = key.content_type
         meta = dict(meta.items() + self.metadata.items())
-        self.dst.bucket.copy_key(self.dst.remote_path, self.src.bucket_name, src, preserve_acl=self.preserve_acl, metadata=meta, headers=headers, encrypt_key=self.encrypt)
+        self.dst.bucket.copy_key(
+            self.dst.remote_path,
+            self.src.bucket_name,
+            src,
+            preserve_acl=self.preserve_acl,
+            metadata=meta,
+            headers=headers,
+            encrypt_key=self.encrypt,
+            src_version_id=self.version_id
+        )
+
         if self.progress:
             print 'Copied %s to %s' % (self.src.uri, self.dst.uri)
 

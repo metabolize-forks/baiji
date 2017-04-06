@@ -28,11 +28,15 @@ class TestAWSBase(unittest.TestCase):
         b = s3.S3Connection()._bucket(self.bucket) # pylint: disable=protected-access
         for key in b.list(self.s3_path[1:]):
             b.delete_key(key)
-        self.assertEqual(len([x for x in b.list(self.s3_path[1:])]), 0) # just make sure we're starting with a clean slate
+        self.assertEqual([x for x in b.list(self.s3_path[1:])], []) # just make sure we're starting with a clean slate
 
         self.tmp_dir = tempfile.mkdtemp('bodylabs-test')
         self.local_file = create_random_temporary_file()
 
+        # use a hardcoded path for test versioned file on S3
+        # to avoid bookkeeping
+
+        self.existing_versioned_remote_file = 's3://baiji-test-versioned/FOO/A_preexisting_file.in'
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
@@ -40,7 +44,7 @@ class TestAWSBase(unittest.TestCase):
         b = s3.S3Connection()._bucket(self.bucket) # pylint: disable=protected-access
         for key in b.list(self.s3_path[1:]):
             b.delete_key(key)
-        self.assertEqual(len([x for x in b.list(self.s3_path[1:])]), 0)
+        self.assertEqual([x for x in b.list(self.s3_path[1:])], [])
 
     def retriable_s3_call(self, call, retries=3):
         from boto.exception import S3ResponseError
@@ -116,6 +120,11 @@ class TestS3Exists(TestAWSBase):
         self.assertFalse(s3.exists('s3://foo'))
         self.assertEqual(mock_lookup.call_count, 3)
 
+    def test_s3_exists_return_false_if_with_unmatched_version_id(self):
+
+        # test not exists with specified versionId
+        unknown_version_id = '5elgojhtA8BGJerqfbciN78eU74SJ9mX'
+        self.assertFalse(s3.exists(self.existing_versioned_remote_file, version_id=unknown_version_id))
 
 class TestEtag(TestAWSBase):
 
@@ -177,8 +186,8 @@ class TestS3(TestAWSBase):
         self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'DL', s3.path.basename(self.existing_remote_file))))
 
     def test_s3_cp_download_versioned_success_with_valid_version_id(self):
-        version_id = s3.info(self.existing_remote_file)['version_id']
-        s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version_id=version_id)
+        version_id = s3.info(self.existing_versioned_remote_file)['version_id']
+        s3.cp(self.existing_versioned_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version_id=version_id)
         self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'DL', 'TEST.foo')))
 
     def test_s3_cp_download_versioned_raise_key_not_found_with_unknown_version_id(self):
@@ -187,7 +196,7 @@ class TestS3(TestAWSBase):
         unknown_version_id = '5elgojhtA8BGJerqfbciN78eU74SJ9mX'
         # test raise KeyNotFound with unknown versionId
         with self.assertRaises(KeyNotFound):
-            s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version_id=unknown_version_id)
+            s3.cp(self.existing_versioned_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version_id=unknown_version_id)
 
     def test_s3_cp_download_versioned_raise_invalid_version_id_with_bad_version_id(self):
         from baiji.exceptions import InvalidVersionID
@@ -195,7 +204,7 @@ class TestS3(TestAWSBase):
         invalid_version_id = '1111'
         # test raise S3ResponseError with invalid versionId
         with self.assertRaises(InvalidVersionID):
-            s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version_id=invalid_version_id)
+            s3.cp(self.existing_versioned_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version_id=invalid_version_id)
 
     @mock.patch('baiji.copy.S3CopyOperation.ensure_integrity')
     def test_s3_cp_download_corrupted_recover_in_one_retry(self, ensure_integrity_mock):

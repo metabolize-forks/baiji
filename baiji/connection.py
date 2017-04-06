@@ -52,11 +52,13 @@ class S3Connection(object):
             else:
                 raise
 
-    def _lookup(self, bucket_name, key, cache_buckets=None):
+    def _lookup(self, bucket_name, key, cache_buckets=None, version_id=None):
         '''
         See _bucket for the details on cache_buckets
         '''
         from baiji.util.munging import _strip_initial_slashes
+        from baiji.util.lookup import get_versioned_key_remote
+
         key = _strip_initial_slashes(key)
 
         try:
@@ -64,7 +66,7 @@ class S3Connection(object):
         except BucketNotFound:
             return None
 
-        return bucket.lookup(key)
+        return get_versioned_key_remote(bucket, key, version_id=version_id)
 
     def cp(self, key_or_file_from, key_or_file_to, force=False, progress=False, policy=None, preserve_acl=False, encoding=None, encrypt=True, gzip=False, content_type=None, guess_content_type=False, metadata=None, skip=False, validate=True, max_size=None, version_id=None):
         """
@@ -158,7 +160,7 @@ class S3Connection(object):
                 except KeyExists as e:
                     print str(e)
 
-    def rm(self, key_or_file):
+    def rm(self, key_or_file, version_id=None):
         '''
         Remove a key from AWS S3
         '''
@@ -173,9 +175,9 @@ class S3Connection(object):
             else:
                 raise KeyNotFound("%s does not exist" % key_or_file)
         elif k.scheme == 's3':
-            if not self.exists(key_or_file):
+            if not self.exists(key_or_file, version_id=version_id):
                 raise KeyNotFound("%s does not exist" % key_or_file)
-            return self._bucket(k.netloc).delete_key(_strip_initial_slashes(k.path))
+            return self._bucket(k.netloc).delete_key(_strip_initial_slashes(k.path), version_id=version_id)
         else:
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)
 
@@ -298,7 +300,7 @@ class S3Connection(object):
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)
         return result
 
-    def exists(self, key_or_file, retries_allowed=3):
+    def exists(self, key_or_file, retries_allowed=3, version_id=None):
         '''
         Check if a file exists on AWS S3
 
@@ -325,7 +327,7 @@ class S3Connection(object):
         elif k.scheme == 's3':
             retry_attempts = 0
             while retry_attempts < retries_allowed:
-                key = self._lookup(k.netloc, k.path, cache_buckets=True)
+                key = self._lookup(k.netloc, k.path, cache_buckets=True, version_id=version_id)
                 if key:
                     if retry_attempts > 0: # only if we find it after failing at least once
                         import warnings
@@ -337,7 +339,7 @@ class S3Connection(object):
         else:
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)
 
-    def size(self, key_or_file):
+    def size(self, key_or_file, version_id=None):
         '''
         Return the size of a file. If it's on s3, don't download it.
         '''
@@ -345,7 +347,7 @@ class S3Connection(object):
         if k.scheme == 'file':
             return os.path.getsize(k.path)
         elif k.scheme == 's3':
-            k = self._lookup(k.netloc, k.path)
+            k = self._lookup(k.netloc, k.path, version_id=version_id)
             if k is None:
                 raise KeyNotFound("s3://%s/%s not found on s3" % (k.netloc, k.path))
             return k.size
@@ -487,7 +489,7 @@ class S3Connection(object):
         kwargs are passed directly on to s3.cp; see there for defaults.
         """
         self.cp(key_or_file_from, key_or_file_to, **kwargs)
-        self.rm(key_or_file_from)
+        self.rm(key_or_file_from, version_id=kwargs.get('version_id', None))
 
     def touch(self, key, encrypt=True):
         """

@@ -1,4 +1,4 @@
-def get_versioned_key_remote(bucket, remote_path, version_id=None):
+def get_versioned_key_remote(bucket, key_name, version_id=None):
     '''
     Utility function to get versioned key from a bucket
 
@@ -9,7 +9,7 @@ def get_versioned_key_remote(bucket, remote_path, version_id=None):
     key = None
 
     try:
-        key = bucket.get_key(remote_path, version_id=version_id)
+        key = bucket.get_key(key_name, version_id=version_id)
     except S3ResponseError as e:
         if e.status == 400:
             raise InvalidVersionID("Invalid versionID %s" % version_id)
