@@ -403,11 +403,12 @@ class TestS3(TestAWSBase):
         self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'DL2', s3.path.basename(self.existing_remote_file))))
 
     def test_s3_mv_versioned(self):
-        version_id = s3.info(self.existing_versioned_remote_file)['version_id']
-        s3.mv(self.existing_versioned_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version_id=version_id)
+        remote_versioned_file = self.existing_versioned_remote_file
+        version_id = s3.info(remote_versioned_file)['version_id']
+        s3.mv(remote_versioned_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version_id=version_id)
 
         self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'DL', 'TEST.foo')))
-        self.assertFalse(s3.exists(self.existing_versioned_remote_file))
+        self.assertFalse(s3.exists(remote_versioned_file))
 
     def test_s3_rm(self):
         for path in [os.path.join(self.tmp_dir, 'foo'), self.remote_file("foo")]:

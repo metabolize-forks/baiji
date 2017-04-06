@@ -65,6 +65,7 @@ class CopyCommand(BaijiCommand):
     gzip = cli.Flag(['-z', '--gzip'], help='Store compressed')
     policy = cli.SwitchAttr('--policy', str, help='override policy when copying to s3 (e.g. private, public-read, bucket-owner-read')
     encoding = cli.SwitchAttr('--encoding', str, help='Content-Encoding: gzip, etc')
+    version_id = cli.SwitchAttr('--version-id', str, default=None, help='s3 object version ID')
     def main(self, src, dst):
         kwargs = {
             'force': self.force,
@@ -75,6 +76,7 @@ class CopyCommand(BaijiCommand):
             'encrypt': self.encrypt,
             'gzip': self.gzip,
             'skip': self.skip,
+            'version_id': self.version_id,
         }
         if self.recursive or self.recursive_parallel:
             s3.cp_r(src, dst, parallel=self.recursive_parallel, **kwargs)
@@ -87,8 +89,9 @@ class MoveCommand(BaijiCommand):
     progress = cli.Flag(['-P', '--progress'], help='show progress bar')
     gzip = cli.Flag(['-z', '--gzip'], help='Store compressed')
     encrypt = cli.Flag('--no-encrypt', default=True, help='Do not server side encrypt at rest')
+    version_id = cli.SwitchAttr('--version-id', str, default=None, help='s3 object version ID')
     def main(self, src, dst):
-        s3.mv(src, dst, force=self.force, progress=self.progress, encrypt=self.encrypt, gzip=self.gzip)
+        s3.mv(src, dst, force=self.force, progress=self.progress, encrypt=self.encrypt, gzip=self.gzip, version_id=version_id)
 
 class TouchCommand(BaijiCommand):
     DESCRIPTION = "touch a file on s3"
@@ -117,6 +120,7 @@ class SyncCommand(BaijiCommand):
 class ExistsCommand(BaijiCommand):
     DESCRIPTION = "check if a file exists on s3"
     retries = cli.SwitchAttr('--retries', int, help='how many times to retry', default=3)
+    version_id = cli.SwitchAttr('--version-id', str, default=None, help='s3 object version ID')
     def main(self, key):
         if not s3.exists(key, retries_allowed=self.retries):
             return -1
