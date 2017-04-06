@@ -49,11 +49,12 @@ class RemoveCommand(BaijiCommand):
     DESCRIPTION = "delete files on s3"
     recursive = cli.Flag(['-r', '--recursive'], help='remove everything below key')
     force = cli.Flag(['-f', '--force'], help="don't prompt for confirmation on recursive rm")
+    version_id = cli.SwitchAttr('--version-id', str, default=None, help='s3 object version ID')
     def main(self, key):
         if self.recursive:
             s3.rm_r(key, force=self.force)
         else:
-            s3.rm(key)
+            s3.rm(key, version_id=self.version_id)
 
 class CopyCommand(BaijiCommand):
     DESCRIPTION = "copy files from or to s3"
