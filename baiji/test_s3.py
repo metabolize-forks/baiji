@@ -33,11 +33,6 @@ class TestAWSBase(unittest.TestCase):
         self.tmp_dir = tempfile.mkdtemp('bodylabs-test')
         self.local_file = create_random_temporary_file()
 
-        # use a hardcoded path for test versioned file on S3
-        # to avoid bookkeeping
-
-        self.existing_versioned_remote_file = 's3://baiji-test-versioned/FOO/A_preexisting_file.in'
-
     def tearDown(self):
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
         os.remove(self.local_file)
@@ -87,6 +82,21 @@ class TestAWSBase(unittest.TestCase):
         uri = self.remote_file("FOO/A_preexisting_file.md")
         if not s3.exists(uri):
             s3.cp(self.local_file, uri)
+        return uri
+
+    @property
+    def existing_versioned_remote_file(self):
+        # use a hardcoded path for test versioned file on S3
+        # to avoid bookkeeping
+        # the current test won't make versioned copies of the file
+        # the remote object will be either deleted (which will be overwritten later)
+        # or download to local
+
+        uri = 's3://baiji-test-versioned/FOO/A_preexisting_file.md'
+
+        if not s3.exists(uri):
+            s3.cp(self.local_file, uri)
+
         return uri
 
 class TestS3Exists(TestAWSBase):
@@ -391,6 +401,13 @@ class TestS3(TestAWSBase):
         self.assert_s3_exists(self.remote_file("FOO2/%s" % os.path.basename(self.local_file)))
         s3.cp(self.existing_remote_file, os.path.join(self.tmp_dir, 'DL2', ''))
         self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'DL2', s3.path.basename(self.existing_remote_file))))
+
+    def test_s3_mv_versioned(self):
+        version_id = s3.info(self.existing_versioned_remote_file)['version_id']
+        s3.mv(self.existing_versioned_remote_file, os.path.join(self.tmp_dir, 'DL', 'TEST.foo'), version_id=version_id)
+
+        self.assertTrue(os.path.exists(os.path.join(self.tmp_dir, 'DL', 'TEST.foo')))
+        self.assertFalse(s3.exists(self.existing_versioned_remote_file))
 
     def test_s3_rm(self):
         for path in [os.path.join(self.tmp_dir, 'foo'), self.remote_file("foo")]:
