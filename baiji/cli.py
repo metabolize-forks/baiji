@@ -20,7 +20,7 @@ class ListCommand(BaijiCommand):
     uri = cli.Flag(["-B", "--uri"], help='This option does nothing. It used to return URIs instead of paths, but this is now the default.')
     detail = cli.Flag(['-l', '--detail'], help='print details, like `ls -l`')
     shallow = cli.Flag("--shallow", help='process key names hierarchically and return only immediate "children" (like ls, instead of like find)')
-    list_versions = cli.Flag(['--list-versions'], help='print details, like `ls -l`')
+    list_versions = cli.Flag(['--list-versions'], help='print all versions')
 
     def main(self, key):
         if self.uri:
