@@ -26,9 +26,8 @@ class TestAWSBase(unittest.TestCase):
         self.s3_path = loc.path
 
         b = s3.S3Connection()._bucket(self.bucket) # pylint: disable=protected-access
-        for key in b.list(self.s3_path[1:]):
-            b.delete_key(key)
-        self.assertEqual(len([x for x in b.list(self.s3_path[1:])]), 0) # just make sure we're starting with a clean slate
+        b.delete_key(self.s3_path[1:] + '.tempdir')
+        self.assertEqual([x for x in b.list(self.s3_path[1:])], []) # just make sure we're starting with a clean slate
 
         self.tmp_dir = tempfile.mkdtemp('bodylabs-test')
         self.local_file = create_random_temporary_file()
@@ -40,7 +39,6 @@ class TestAWSBase(unittest.TestCase):
         b = s3.S3Connection()._bucket(self.bucket) # pylint: disable=protected-access
         for key in b.list(self.s3_path[1:]):
             b.delete_key(key)
-        self.assertEqual(len([x for x in b.list(self.s3_path[1:])]), 0)
 
     def retriable_s3_call(self, call, retries=3):
         from boto.exception import S3ResponseError
