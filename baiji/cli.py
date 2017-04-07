@@ -92,9 +92,8 @@ class MoveCommand(BaijiCommand):
     progress = cli.Flag(['-P', '--progress'], help='show progress bar')
     gzip = cli.Flag(['-z', '--gzip'], help='Store compressed')
     encrypt = cli.Flag('--no-encrypt', default=True, help='Do not server side encrypt at rest')
-    version_id = cli.SwitchAttr('--version-id', str, default=None, help='s3 object version ID')
     def main(self, src, dst):
-        s3.mv(src, dst, force=self.force, progress=self.progress, encrypt=self.encrypt, gzip=self.gzip, version_id=self.version_id)
+        s3.mv(src, dst, force=self.force, progress=self.progress, encrypt=self.encrypt, gzip=self.gzip)
 
 class TouchCommand(BaijiCommand):
     DESCRIPTION = "touch a file on s3"

@@ -495,7 +495,7 @@ class S3Connection(object):
         kwargs are passed directly on to s3.cp; see there for defaults.
         """
         self.cp(key_or_file_from, key_or_file_to, **kwargs)
-        self.rm(key_or_file_from, version_id=kwargs.get('version_id', None))
+        self.rm(key_or_file_from)
 
     def touch(self, key, encrypt=True):
         """
