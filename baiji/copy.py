@@ -51,19 +51,25 @@ class S3CopyOperation(object):
             return self.connection.etag(self.uri)
         def rm(self):
             return self.connection.rm(self.uri)
-        def lookup(self):
+        def lookup(self, version_id=None):
+            from baiji.util.lookup import get_versioned_key_remote
+
             if self.is_file:
                 raise ValueError("S3CopyOperation.CopyableKey.lookup called for local file")
-            key = self.bucket.lookup(self.remote_path)
+
+            key = get_versioned_key_remote(self.bucket, self.remote_path, version_id=version_id)
+
             if not key:
                 raise KeyNotFound("Error finding %s on s3: doesn't exist" % (self.uri))
             return key
+
         def create(self):
             if self.is_file:
                 raise ValueError("S3CopyOperation.CopyableKey.create called for local file")
             from boto.s3.key import Key
             key = Key(self.bucket)
             key.key = self.remote_path
+
             return key
 
     def __init__(self, src, dst, connection):
@@ -99,6 +105,8 @@ class S3CopyOperation(object):
         self._retries = 0
 
         self.file_size = None
+        # s3 version
+        self._version_id = None
 
     @property # read only
     def retries_made(self):
@@ -112,6 +120,14 @@ class S3CopyOperation(object):
         if val and self.dst.is_file:
             raise ValueError("Policy only allowed when copying to s3")
         self._policy = val  # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
+
+    @property
+    def version_id(self):
+        return self._version_id
+    @version_id.setter
+    def version_id(self, val):
+        self._version_id = val  # we get initialized with a call to the setter in init pylint: disable=attribute-defined-outside-init
+
 
     @property
     def preserve_acl(self):
@@ -356,7 +372,7 @@ class S3CopyOperation(object):
         # twice by the same process.
         tf = tempfile.NamedTemporaryFile(delete=False)
         try:
-            key = self.src.lookup()
+            key = self.src.lookup(version_id=self.version_id)
 
             with FileTransferProgressbar(supress=(not self.progress)) as cb:
                 key.get_contents_to_file(tf, cb=cb)
@@ -380,7 +396,6 @@ class S3CopyOperation(object):
                 self.download()
             else:
                 raise
-
         finally:
             self.connection.rm(tf.name)
 
@@ -404,7 +419,17 @@ class S3CopyOperation(object):
         meta['Content-Encoding'] = key.content_encoding
         meta['Content-Type'] = key.content_type
         meta = dict(meta.items() + self.metadata.items())
-        self.dst.bucket.copy_key(self.dst.remote_path, self.src.bucket_name, src, preserve_acl=self.preserve_acl, metadata=meta, headers=headers, encrypt_key=self.encrypt)
+        self.dst.bucket.copy_key(
+            self.dst.remote_path,
+            self.src.bucket_name,
+            src,
+            preserve_acl=self.preserve_acl,
+            metadata=meta,
+            headers=headers,
+            encrypt_key=self.encrypt,
+            src_version_id=self.version_id
+        )
+
         if self.progress:
             print 'Copied %s to %s' % (self.src.uri, self.dst.uri)
 

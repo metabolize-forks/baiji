@@ -20,17 +20,19 @@ class ListCommand(BaijiCommand):
     uri = cli.Flag(["-B", "--uri"], help='This option does nothing. It used to return URIs instead of paths, but this is now the default.')
     detail = cli.Flag(['-l', '--detail'], help='print details, like `ls -l`')
     shallow = cli.Flag("--shallow", help='process key names hierarchically and return only immediate "children" (like ls, instead of like find)')
+    list_versions = cli.Flag(['--list-versions'], help='print all versions')
+
     def main(self, key):
         if self.uri:
             print "-B and --uri are deprecated options"
         try:
-            keys = s3.ls(key, return_full_urls=True, require_s3_scheme=True, shallow=self.shallow)
+            keys = s3.ls(key, return_full_urls=True, require_s3_scheme=True, shallow=self.shallow, list_versions=self.list_versions)
             if self.detail:
                 from baiji.util.console import sizeof_format_human_readable
                 for key in keys:
                     info = s3.info(key)
                     enc = " enc" if info['encrypted'] else "    "
-                    print "%s\t%s%s\t%s" % (sizeof_format_human_readable(info['size']), info['last_modified'], enc, key.encode('utf-8'),)
+                    print "%s\t%s%s\t%s\t%s" % (sizeof_format_human_readable(info['size']), info['last_modified'], enc, key.encode('utf-8'), info['version_id'])
             else:
                 print u"\n".join(keys).encode('utf-8')
         except s3.InvalidSchemeException as e:
@@ -47,11 +49,12 @@ class RemoveCommand(BaijiCommand):
     DESCRIPTION = "delete files on s3"
     recursive = cli.Flag(['-r', '--recursive'], help='remove everything below key')
     force = cli.Flag(['-f', '--force'], help="don't prompt for confirmation on recursive rm")
+    version_id = cli.SwitchAttr('--version-id', str, default=None, help='s3 object version ID')
     def main(self, key):
         if self.recursive:
             s3.rm_r(key, force=self.force)
         else:
-            s3.rm(key)
+            s3.rm(key, version_id=self.version_id)
 
 class CopyCommand(BaijiCommand):
     DESCRIPTION = "copy files from or to s3"
@@ -65,6 +68,7 @@ class CopyCommand(BaijiCommand):
     gzip = cli.Flag(['-z', '--gzip'], help='Store compressed')
     policy = cli.SwitchAttr('--policy', str, help='override policy when copying to s3 (e.g. private, public-read, bucket-owner-read')
     encoding = cli.SwitchAttr('--encoding', str, help='Content-Encoding: gzip, etc')
+    version_id = cli.SwitchAttr('--version-id', str, default=None, help='s3 object version ID')
     def main(self, src, dst):
         kwargs = {
             'force': self.force,
@@ -75,6 +79,7 @@ class CopyCommand(BaijiCommand):
             'encrypt': self.encrypt,
             'gzip': self.gzip,
             'skip': self.skip,
+            'version_id': self.version_id,
         }
         if self.recursive or self.recursive_parallel:
             s3.cp_r(src, dst, parallel=self.recursive_parallel, **kwargs)
@@ -117,6 +122,7 @@ class SyncCommand(BaijiCommand):
 class ExistsCommand(BaijiCommand):
     DESCRIPTION = "check if a file exists on s3"
     retries = cli.SwitchAttr('--retries', int, help='how many times to retry', default=3)
+    version_id = cli.SwitchAttr('--version-id', str, default=None, help='s3 object version ID')
     def main(self, key):
         if not s3.exists(key, retries_allowed=self.retries):
             return -1
