@@ -86,7 +86,7 @@ class S3CopyOperation(object):
             raise ValueError("{} is a directory (not copied; use recursive mode to copy directories".format(self.src.raw))
 
         if self.dst.isdir:
-            self.dst.path = os.path.join(self.dst.path, os.path.basename(self.src.path))
+            self.dst.path = path.join(self.dst.path, path.basename(self.src.path))
 
         # DEFAULTS:
         self.progress = False

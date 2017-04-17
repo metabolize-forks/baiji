@@ -4,10 +4,11 @@ def mkdir_p(path):
     '''
     import errno
     import os
-    if len(path) > 0:
+    if path:
         try:
             os.makedirs(path)
         except OSError as ex:
             if ex.errno == errno.EEXIST:
                 pass
-            else: raise
+            else:
+                raise

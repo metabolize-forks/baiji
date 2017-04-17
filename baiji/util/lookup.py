@@ -13,5 +13,5 @@ def get_versioned_key_remote(bucket, key_name, version_id=None):
         if e.status == 400:
             raise InvalidVersionID("Invalid versionID %s" % version_id)
         else:
-            raise e
+            raise
     return key

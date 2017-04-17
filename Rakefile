@@ -39,6 +39,10 @@ task :test do
   raise unless system "nose2"
 end
 
+task :unittest do
+  raise unless system "nose2"
+end
+
 task :lint => :require_style_config do
   raise unless system "bodylabs-python-style/bin/pylint_test baiji --min_rating 10.0"
 end

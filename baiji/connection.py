@@ -421,7 +421,7 @@ class S3Connection(object):
             # print "  - possible_part_sizes:", possible_part_sizes
             possible_part_sizes = set([part_size for part_size in possible_part_sizes if part_size <= max_part_size and part_size >= 1024*1024*5])
             # print "  - possible_part_sizes:", possible_part_sizes
-            if len(possible_part_sizes) == 0:
+            if not possible_part_sizes:
                 return False
             for part_size in possible_part_sizes:
                 # print "  -", part_size, self._build_etag(k.path, n_parts, part_size)
@@ -720,4 +720,3 @@ class S3Connection(object):
 
     def disable_versioning(self, bucket):
         self._bucket(bucket).configure_versioning(False)
-

@@ -93,7 +93,8 @@ def gettmpdir(prefix='tmp/', suffix='', bucket='bodylabs-temp', uuid_generator=N
     done = False
     while not done:
         tmppath = "%s%s%s" % (prefix, uuid_generator(), suffix)
-        if len([x for x in b.list(prefix=tmppath)]) == 0:
+        existin_files_at_tmppath = [x for x in b.list(prefix=tmppath)]
+        if not existin_files_at_tmppath:
             k = Key(b)
             k.key = "%s/.tempdir" % (tmppath)
             k.set_contents_from_string('')
