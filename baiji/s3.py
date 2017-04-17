@@ -96,7 +96,7 @@ def enable_versioning(*args, **kwargs):
 def disable_versioning(*args, **kwargs):
     return S3Connection().disable_versioning(*args, **kwargs)
 
-def open(key, mode='rb'): # pylint: disable=redefined-builtin
+def open(key, mode='rb', version_id=None): # pylint: disable=redefined-builtin
     '''
     Acts like open(key, mode), opening a file.
 
@@ -121,6 +121,8 @@ def open(key, mode='rb'): # pylint: disable=redefined-builtin
     existing file or key, ValueError for an invalid key, and IOError for an
     underlying local file-system failure.
 
+    version_id: comes handy when opening remote versioned files. no-op otherwise
+
     '''
     from baiji.cached_file import CachedFile
-    return CachedFile(key, mode)
+    return CachedFile(key, mode, version_id=version_id)
