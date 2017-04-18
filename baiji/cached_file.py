@@ -59,7 +59,7 @@ class CachedFile(object):
     CachedFile('s3://bucket/path/to/file.ext', 'w') opens a temp file for writing and uploads it on close
     CachedFile('s3://bucket/path/to/file.ext', 'x') verifies that the file doesn't exist on s3, then behaves like 'w'
     '''
-    def __init__(self, key, mode='r', connection=None, encrypt=True):
+    def __init__(self, key, mode='r', connection=None, encrypt=True, version_id=None):
         from baiji.connection import S3Connection
         self.encrypt = encrypt
         self.key = key
@@ -110,7 +110,7 @@ class CachedFile(object):
             self.name = self.f.name
             self.remotename = key # Used by some serialization code to find files which sit along side the file in question, like textures which sit next to a mesh file
             if self.mode.reading:
-                self.connection.cp(self.key, self.name, force=True)
+                self.connection.cp(self.key, self.name, force=True, version_id=version_id)
     def upload(self):
         self.connection.cp(self.name, self.key, encrypt=self.encrypt, force=True)
     def __enter__(self):

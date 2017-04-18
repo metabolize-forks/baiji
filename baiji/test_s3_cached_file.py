@@ -209,6 +209,22 @@ class TestCachedFile(TestAWSBase):
         with self.assertRaises(s3.KeyNotFound):
             s3.open(nonexistent_file, 'r')
 
+    def test_s3_open_read_versioned_remote_file(self):
+        remote_file_name = self.existing_versioned_remote_file
+        version_id = s3.info(remote_file_name)['version_id']
+
+        with s3.open(remote_file_name, 'r', version_id=version_id) as f:
+            tempname = f.name
+
+        self.assertFalse(os.path.exists(tempname))
+
+    def test_s3_open_read_versioned_remote_file_with_unkown_version_id_raise_key_not_found(self):
+        remote_file_name = self.existing_versioned_remote_file
+        unknown_version_id = '5elgojhtA8BGJerqfbciN78eU74SJ9mX'
+
+        with self.assertRaises(s3.KeyNotFound):
+            s3.open(remote_file_name, 'r', version_id=unknown_version_id)
+
     def test_s3_open_write_does_not_raise_error_for_nonexistent_remote_file(self):
         nonexistent_file = self.remote_file(str(uuid.uuid4()))
         self.assert_s3_does_not_exist(nonexistent_file)
