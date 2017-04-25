@@ -33,7 +33,7 @@ class TestSync(TestAWSBase):
         s3.touch(s3.path.join(self.s3_test_location, 'foo/'))
 
     def create_random_file_at(self, bases, path):
-        from baiji.util.testing import random_data
+        from bltest.random import random_data
         data = random_data()
         for base in bases:
             with s3.open(s3.path.join(base, path), 'w') as f:

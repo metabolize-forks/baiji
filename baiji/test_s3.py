@@ -3,7 +3,7 @@ import shutil
 import unittest
 import mock
 from baiji import s3
-from baiji.util.testing import create_random_temporary_file
+from bltest.random import create_random_temporary_file
 from baiji.util import tempfile
 
 TEST_BUCKET = 'baiji-test'
