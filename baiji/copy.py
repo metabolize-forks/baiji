@@ -76,7 +76,6 @@ class S3CopyOperation(object):
         '''
         Both src and dst may be files or s3 keys
         '''
-        from baiji import path
         self.connection = connection
         self.src = self.CopyableKey(src, connection)
         self.dst = self.CopyableKey(dst, connection)
