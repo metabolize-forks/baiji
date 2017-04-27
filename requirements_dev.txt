@@ -3,3 +3,4 @@
 nose2>=0.5.0
 mock>=1.3.0
 pylint>=1.5.4
+bltest>=1.0.0,<2

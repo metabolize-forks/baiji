@@ -1,5 +1,5 @@
-import uuid
 import os
+import uuid
 import mock
 from baiji import s3
 from baiji.test_s3 import TestAWSBase

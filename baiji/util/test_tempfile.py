@@ -1,8 +1,8 @@
 import os
 import unittest
+from test.test_support import EnvironmentVarGuard
 import shutil
 import uuid
-from test.test_support import EnvironmentVarGuard
 from baiji.util import tempfile
 
 class TestTempfile(unittest.TestCase):
