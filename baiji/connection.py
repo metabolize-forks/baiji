@@ -166,7 +166,7 @@ class S3Connection(object):
                     # There's nothing in the iterator, so there are no files to be found, so
                     # we set force for the copy so that we don't have to check each one:
                     kwargs['force'] = True
-        cp_many(files_to_copy, parallel, **kwargs)
+        self.cp_many(files_to_copy, parallel, **kwargs)
 
 
     def rm(self, key_or_file, version_id=None):
