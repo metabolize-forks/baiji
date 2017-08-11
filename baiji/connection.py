@@ -119,12 +119,12 @@ class S3Connection(object):
                 # Emulate `cp`, which copies the contents of the path.
                 # Get path relative to from_path
                 files_to_copy = [(f, path.join(dir_to, os.path.relpath(path.parse(f).path, from_path)))
-                                 for f in self.ls(dir_from, return_full_urls=True)]
+                                 for f in self.ls(dir_from, return_full_urls=True) if not path.isdirlike(f)]
             else:
                 # Get path relative to from_path's parent
                 # Since from_path has no '/', we can get this with os.path.dirname()
                 files_to_copy = [(f, path.join(dir_to, os.path.relpath(path.parse(f).path, os.path.dirname(from_path))))
-                                 for f in self.ls(dir_from, return_full_urls=True)]
+                                 for f in self.ls(dir_from, return_full_urls=True) if not path.isdirlike(f)]
 
         if 'force' not in kwargs or not kwargs['force']:
             # we're not supposed to overwrite. Locally this is easy, since `exists` checks are cheap, but
