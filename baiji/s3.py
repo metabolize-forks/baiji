@@ -27,6 +27,9 @@ def cp(*args, **kwargs):
 def cp_r(*args, **kwargs):
     return S3Connection().cp_r(*args, **kwargs)
 
+def cp_many(*args, **kwargs):
+    return S3Connection().cp_many(*args, **kwargs)
+
 def rm(*args, **kwargs):
     return S3Connection().rm(*args, **kwargs)
 
