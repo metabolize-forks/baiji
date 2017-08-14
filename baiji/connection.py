@@ -106,6 +106,27 @@ class S3Connection(object):
 
         op.execute()
 
+    def cp_many(self, files_to_copy, parallel=False, **kwargs):
+        '''
+        files_to_copy should be a sequence of sequences on the form:
+            [(src1, dst1), (src2, dst2),...]
+        parallel is a bool. When True, files are copied in parallel.
+        kwargs are passed on directly to s3.cp; see defaults there.
+        '''
+        if parallel:
+            from baiji.util.parallel import parallel_for
+            from baiji.copy import MultifileCopyWorker
+            parallel_for(files_to_copy, MultifileCopyWorker, args=[kwargs], num_processes=12)
+        else:
+            for file_from, file_to in files_to_copy:
+                try:
+                    # Note here that the correct behavior would probably be to roll back
+                    # if we encounter an error, but that's not practical, so we copy
+                    # what we can and show an error about the rest.
+                    self.cp(file_from, file_to, **kwargs)
+                except KeyExists as e:
+                    print str(e)
+
     def cp_r(self, dir_from, dir_to, parallel=False, **kwargs):
         '''
         kwargs are passed on directly to s3.cp; see defaults there.
@@ -145,20 +166,8 @@ class S3Connection(object):
                     # There's nothing in the iterator, so there are no files to be found, so
                     # we set force for the copy so that we don't have to check each one:
                     kwargs['force'] = True
+        self.cp_many(files_to_copy, parallel, **kwargs)
 
-        if parallel:
-            from baiji.util.parallel import parallel_for
-            from baiji.copy import MultifileCopyWorker
-            parallel_for(files_to_copy, MultifileCopyWorker, args=[kwargs], num_processes=12)
-        else:
-            for file_from, file_to in files_to_copy:
-                try:
-                    # Note here that the correct behavior would probably be to roll back
-                    # if we encounter an error, but that's not practical, so we copy
-                    # what we can and show an error about the rest.
-                    self.cp(file_from, file_to, **kwargs)
-                except KeyExists as e:
-                    print str(e)
 
     def rm(self, key_or_file, version_id=None):
         '''
