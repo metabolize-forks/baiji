@@ -8,6 +8,7 @@ class S3App(cli.Application):
     DESCRIPTION = "AWS S3 tool\nkeys are a kind of URL, of the form s3://BUCKET/PATH/TO/FILE"
 
 S3App.subcommand("ls", "baiji.cli.ListCommand")
+S3App.subcommand("restore", "baiji.cli.RestoreCommand")
 S3App.subcommand("info", "baiji.cli.InfoCommand")
 S3App.subcommand("rm", "baiji.cli.RemoveCommand")
 S3App.subcommand("cp", "baiji.cli.CopyCommand")

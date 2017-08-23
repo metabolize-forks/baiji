@@ -1,5 +1,23 @@
 from __future__ import print_function
 
+class LabeledSpinner(object):
+    def __init__(self, style=None):
+        from pyspin.spin import Default, Spinner
+        if style is None:
+            style = Default
+        self.spinner = Spinner(style)
+        self.last_len = 0
+    def spin(self, text):
+        self.display(u"{} {}".format(self.spinner.next(), text))
+    def drop(self, text):
+        self.display(u"{}\n".format(text))
+    def display(self, text):
+        import sys
+        print(u'\r{}{}'.format(text, " " * (self.last_len - len(text))), end='')
+        sys.stdout.flush()
+        self.last_len = len(text)
+
+
 # Adapted from http://code.activestate.com/recipes/577058/
 def confirm(question, default="no"):
     """Ask a yes/no question via raw_input() and return their answer.

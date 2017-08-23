@@ -45,6 +45,9 @@ def glob(*args, **kwargs):
 def info(*args, **kwargs):
     return S3Connection().info(*args, **kwargs)
 
+def restore(*args, **kwargs):
+    return S3Connection().restore(*args, **kwargs)
+
 def exists(*args, **kwargs):
     return S3Connection().exists(*args, **kwargs)
 

@@ -265,6 +265,17 @@ class S3Connection(object):
         else:
             raise InvalidSchemeException("URI Scheme %s is not implemented" % k.scheme)
 
+    def restore(self, key):
+        from boto.s3.deletemarker import DeleteMarker
+        k = path.parse(key)
+        prefix = k.path
+        if prefix.startswith(path.sep):
+            prefix = prefix[len(path.sep):]
+        versions = self._bucket(k.netloc).list_versions(prefix)
+        delete_marker = [x for x in versions if x.name == prefix and isinstance(x, DeleteMarker) and x.is_latest]
+        if delete_marker:
+            self._bucket(k.netloc).delete_key(delete_marker[0].name, version_id=delete_marker[0].version_id)
+
     def glob(self, prefix, pattern):
         '''
         Given a path prefix and a pattern, iterate over matching paths.

@@ -410,7 +410,6 @@ class S3CopyOperation(object):
         '''
         With copy_key, if metadata is None, it will be copied from the existing key
         '''
-        src = self.src.remote_path
         headers = {}
         if self.policy:
             headers['x-amz-acl'] = self.policy
@@ -422,7 +421,7 @@ class S3CopyOperation(object):
         self.dst.bucket.copy_key(
             self.dst.remote_path,
             self.src.bucket_name,
-            src,
+            self.src.remote_path,
             preserve_acl=self.preserve_acl,
             metadata=meta,
             headers=headers,

@@ -19,7 +19,7 @@ class ListCommand(BaijiCommand):
     DESCRIPTION = "list files on s3"
     uri = cli.Flag(["-B", "--uri"], help='This option does nothing. It used to return URIs instead of paths, but this is now the default.')
     detail = cli.Flag(['-l', '--detail'], help='print details, like `ls -l`')
-    shallow = cli.Flag("--shallow", help='process key names hierarchically and return only immediate "children" (like ls, instead of like find)')
+    shallow = cli.Flag(['-s', "--shallow"], help='process key names hierarchically and return only immediate "children" (like ls, instead of like find)')
     list_versions = cli.Flag(['--list-versions'], help='print all versions')
 
     def main(self, key):
@@ -38,6 +38,20 @@ class ListCommand(BaijiCommand):
         except s3.InvalidSchemeException as e:
             print e
             return 1
+
+class RestoreCommand(BaijiCommand):
+    DESCRIPTION = "restore deleted files on s3"
+    def main(self, prefix):
+        from baiji.util.console import LabeledSpinner
+        if s3.path.islocal(prefix):
+            raise ValueError("restore command only works on s3")
+        spin = LabeledSpinner()
+        for key in s3.ls(prefix, return_full_urls=True, require_s3_scheme=True, list_versions=True):
+            if not s3.exists(key):
+                spin.drop("Restoring deleted file {}".format(key))
+                s3.restore(key)
+            else:
+                spin.spin(key)
 
 class InfoCommand(BaijiCommand):
     DESCRIPTION = "info for file on s3"
