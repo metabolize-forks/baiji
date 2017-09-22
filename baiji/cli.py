@@ -34,7 +34,9 @@ class ListCommand(BaijiCommand):
                     enc = " enc" if info['encrypted'] else "    "
                     print "%s\t%s%s\t%s\t%s" % (sizeof_format_human_readable(info['size']), info['last_modified'], enc, key.encode('utf-8'), info['version_id'])
             else:
-                print u"\n".join(keys).encode('utf-8')
+                # print u"\n".join(keys).encode('utf-8')
+                for key in keys:
+                    print key
         except s3.InvalidSchemeException as e:
             print e
             return 1
