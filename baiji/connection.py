@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from baiji import path
 from baiji.exceptions import InvalidSchemeException, S3Exception, KeyNotFound, BucketNotFound, KeyExists
@@ -125,7 +126,7 @@ class S3Connection(object):
                     # what we can and show an error about the rest.
                     self.cp(file_from, file_to, **kwargs)
                 except KeyExists as e:
-                    print str(e)
+                    print(str(e))
 
     def cp_r(self, dir_from, dir_to, parallel=False, **kwargs):
         '''
@@ -209,7 +210,7 @@ class S3Connection(object):
                     continue
             self.rm(url)
             if not quiet:
-                print "[deleted] %s" % url
+                print("[deleted] %s" % url)
 
     def ls(self, s3prefix, return_full_urls=False, require_s3_scheme=False, shallow=False, followlinks=False, list_versions=False):
         '''
@@ -627,10 +628,10 @@ class S3Connection(object):
             removed_file = key_or_dir_to + f
             if any([f.startswith(x) for x in do_not_delete]):
                 if progress:
-                    print "leaving alone", removed_file
+                    print("leaving alone", removed_file)
             else:
                 if progress:
-                    print "removing", removed_file
+                    print("removing", removed_file)
                 self.rm(removed_file)
 
     def get_url(self, key, ttl):

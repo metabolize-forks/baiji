@@ -35,14 +35,14 @@ class ConfConfigFile(ConfigFile):
         self.keys = keys
 
     def load(self):
-        import ConfigParser
-        config = ConfigParser.ConfigParser()
+        from configparser import ConfigParser, NoOptionError
+        config = ConfigParser()
         config.read([self.path])
         data = {}
         for out_key, conf_key in self.keys.items():
             try:
                 data[out_key] = config.get('default', conf_key)
-            except ConfigParser.NoOptionError:
+            except NoOptionError:
                 pass
         return data
 
