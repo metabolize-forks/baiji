@@ -291,10 +291,10 @@ class S3Connection(object):
         '''
         import fnmatch
         import functools
-        import itertools
+        import six
         predicate = functools.partial(fnmatch.fnmatch, pat=prefix + pattern)
         listing = self.ls(prefix, return_full_urls=True)
-        return itertools.ifilter(predicate, listing)
+        return six.moves.filter(predicate, listing)
 
     def info(self, key_or_file):
         '''
