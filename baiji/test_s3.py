@@ -80,7 +80,7 @@ class TestAWSBase(unittest.TestCase):
         self.assertFalse(self.retriable_s3_call(lambda: s3.exists(path)))
 
     def assert_is_public(self, s3_url, is_public):
-        from urlparse import urlparse
+        from six.moves.urllib.parse import urlparse
         url = urlparse(s3_url)
         acl = self.retriable_s3_call(lambda: s3.S3Connection()._bucket(url.netloc).get_acl(url.path[1:])) # pylint: disable=protected-access
         actual_is_public = False

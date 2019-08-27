@@ -228,7 +228,7 @@ class S3Connection(object):
         returned.
 
         '''
-        import itertools
+        import six
         k = path.parse(s3prefix)
         if k.scheme == 's3':
             prefix = k.path
@@ -245,7 +245,7 @@ class S3Connection(object):
             else:
                 result_list_iterator = self._bucket(k.netloc).list(prefix=prefix, delimiter=delimiter)
 
-            return itertools.imap(clean_paths, result_list_iterator)
+            return six.map(clean_paths, result_list_iterator)
         elif k.scheme == 'file':
             if require_s3_scheme:
                 raise InvalidSchemeException('URI should begin with s3://')
