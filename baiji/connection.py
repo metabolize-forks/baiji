@@ -245,7 +245,7 @@ class S3Connection(object):
             else:
                 result_list_iterator = self._bucket(k.netloc).list(prefix=prefix, delimiter=delimiter)
 
-            return six.map(clean_paths, result_list_iterator)
+            return six.moves.map(clean_paths, result_list_iterator)
         elif k.scheme == 'file':
             if require_s3_scheme:
                 raise InvalidSchemeException('URI should begin with s3://')
