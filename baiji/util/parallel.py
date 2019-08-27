@@ -1,3 +1,4 @@
+from __future__ import print_function
 '''
 Usage of parallel_for:
 
@@ -95,7 +96,7 @@ def parallel_for(a, cls, args=[], kwargs={}, num_processes=None):
         combined_output = output_watcher.merged
         return combined_output
     except KeyboardInterrupt:
-        print "Interrupted -- terminating worker processes"
+        print("Interrupted -- terminating worker processes")
         for p in pool:
             p.terminate()
         for p in pool:
@@ -124,7 +125,7 @@ class ParallelWorker(object):
                     self.on_run(next_item)
             except Exception: # Really, we want to catch _anything_, otherwise the process will never join pylint: disable=broad-except
                 import traceback
-                print u"parallel_for FAILED on input {}:".format(next_item)
+                print(u"parallel_for FAILED on input {}:".format(next_item))
                 traceback.print_exc()
             q.task_done()
         if hasattr(self, 'on_done'):
