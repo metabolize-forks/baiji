@@ -660,12 +660,12 @@ class S3Connection(object):
         k.key = _strip_initial_slashes(key.path)
         k.set_contents_from_string(s, encrypt_key=encrypt, replace=replace)
 
-    def get_string(self, key):
+    def get_string(self, key, encoding=None):
         '''
         Get string stored in S3 ``key``.
         '''
         k = path.parse(key)
-        return self._lookup(k.netloc, k.path).get_contents_as_string()
+        return self._lookup(k.netloc, k.path).get_contents_as_string(encoding=encoding)
 
     def open(self, key, mode='rb'): # pylint: disable=redefined-builtin
         '''

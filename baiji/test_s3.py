@@ -161,7 +161,7 @@ class TestEtag(TestAWSBase):
     @property
     def true_md5(self):
         import hashlib
-        with open(self.local_file) as f:
+        with open(self.local_file, 'b') as f:
             return hashlib.md5(f.read()).hexdigest()
 
     def test_etag_remote_equals_local(self):
@@ -448,7 +448,7 @@ class TestS3(TestAWSBase):
     def test_strings(self):
         s = "TEST STRING"
         s3.put_string(self.remote_file("string"), s)
-        self.assertEqual(s3.get_string(self.remote_file("string")), s)
+        self.assertEqual(s3.get_string(self.remote_file("string"), encoding='utf-8'), s)
 
     # TODO: Test with local paths. Instead of having a single local file
     # we can have a local subdirectory that is cleaned up on teardown.
