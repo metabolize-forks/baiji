@@ -1,7 +1,15 @@
 baiji
 =====
 
-High-level Python abstraction layer for Amazon S3:
+[![pip install](https://img.shields.io/badge/pip%20install-metabaiji-f441b8?style=flat-square)][pypi]
+[![version](https://img.shields.io/pypi/v/metabaiji?style=flat-square)][pypi]
+[![python versions](https://img.shields.io/pypi/pyversions/metabaiji?style=flat-square)][pypi]
+[![build status](https://img.shields.io/circleci/project/github/metabolize/baiji/master.svg?style=flat-square)][circle]
+[![last commit](https://img.shields.io/github/last-commit/metabolize/baiji?style=flat-square)][commits]
+[![open pull requests](https://img.shields.io/github/issues-pr/metabolize/baiji?style=flat-square)][pull requests]
+
+This is an active fork of [baiji][upstream], a high-level Python abstraction
+layer for Amazon S3:
 
 1. An [`open`][open]-like context handler which allows using S3 keys and
    local files interchangeably.
@@ -10,6 +18,22 @@ High-level Python abstraction layer for Amazon S3:
      - When writing S3, contents are written to a temporary local file,
        and uploaded on close.
 2. An `s3` CLI for listing, copying, syncing, and other common activities.
+
+The fork's goals are modest:
+
+- Keep the library working in current versions of Python and other tools.
+- Make bug fixes.
+- Provide API stability and backward compatibility with the upstream version.
+- Respond to community contributions.
+
+It's used by related forks such as [lace][].
+
+[upstream]: https://github.com/bodylabs/baiji
+[circle]: https://circleci.com/gh/metabolize/baiji
+[pypi]: https://pypi.org/project/metabaiji/
+[pull requests]: https://github.com/metabolize/baiji/pulls
+[commits]: https://github.com/metabolize/baiji/commits/master
+[lace]: https://github.com/metabolize/lace
 
 
 Features
