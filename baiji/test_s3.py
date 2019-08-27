@@ -7,6 +7,7 @@ from baiji import s3
 from baiji.util import tempfile
 
 TEST_BUCKET = 'metabaiji-test'
+VERSIONED_TEST_BUCKET = 'metabaiji-test-versioned'
 
 class TestAWSBase(unittest.TestCase):
     """
@@ -90,7 +91,7 @@ class TestAWSBase(unittest.TestCase):
         # the remote object will be either deleted (which will be overwritten later)
         # or download to local
 
-        uri = 's3://baiji-test-versioned/FOO/A_preexisting_file.md'
+        uri = 's3://{}/FOO/A_preexisting_file.md'.format(VERSIONED_TEST_BUCKET)
 
         if not s3.exists(uri):
             s3.cp(self.local_file, uri)
