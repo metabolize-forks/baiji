@@ -161,7 +161,7 @@ class TestEtag(TestAWSBase):
     @property
     def true_md5(self):
         import hashlib
-        with open(self.local_file, 'b') as f:
+        with open(self.local_file, 'rb') as f:
             return hashlib.md5(f.read()).hexdigest()
 
     def test_etag_remote_equals_local(self):
