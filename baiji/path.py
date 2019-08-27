@@ -25,7 +25,7 @@ def parse(s):
 
     '''
     import re
-    from urlparse import urlparse, ParseResult
+    from six.moves.urllib.parse import urlparse, ParseResult
 
     if not isinstance(s, basestring):
         raise ValueError("An S3 path must be a string, got %s" % s.__class__.__name__)
@@ -115,7 +115,7 @@ def join(base, *additions):
     result will always be normalized to os.sep.
 
     '''
-    from urlparse import urlparse, urljoin, ParseResult
+    from six.moves.urllib.parse import urlparse, urljoin, ParseResult
 
     addition = sep.join(additions)
 
