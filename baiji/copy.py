@@ -418,7 +418,7 @@ class S3CopyOperation(object):
         meta = key.metadata
         meta['Content-Encoding'] = key.content_encoding
         meta['Content-Type'] = key.content_type
-        meta = dict(list(meta.items()) + list(self.metadata.items()))
+        meta.update(self.metadata)
         self.dst.bucket.copy_key(
             self.dst.remote_path,
             self.src.bucket_name,
