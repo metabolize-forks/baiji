@@ -17,7 +17,7 @@ def random_data(sz=None):
         import string
         return ''.join(random.choice(string.ascii_letters) for x in range(80))
 
-    return '\n'.join(random_line() for x in range(sz/80))
+    return '\n'.join(random_line() for x in range(int(sz/80)))
 
 def create_random_temporary_file(sz=None):
     '''
