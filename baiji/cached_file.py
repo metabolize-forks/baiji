@@ -66,7 +66,7 @@ class CachedFile(object):
         if path.islocal(key):
             self.should_upload_on_close = False
             self.mode = FileMode(mode, allowed_modes='arwxb+t')
-            from six import builtins
+            from six.moves import builtins
             local_path = path.parse(key).path
             if self.mode.is_output and not os.path.exists(os.path.dirname(local_path)):
                 from baiji.util.shutillib import mkdir_p
