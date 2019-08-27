@@ -1,8 +1,8 @@
 import unittest
 import tempfile
-from test.test_support import EnvironmentVarGuard
 from baiji.config import Settings
 from baiji.exceptions import AWSCredentialsMissing
+from baiji.util.test_support import EnvironmentVarGuard
 
 class FakeConfigFile(object):
     def __init__(self, contents):
