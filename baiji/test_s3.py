@@ -6,7 +6,7 @@ from bltest.random_data import create_random_temporary_file
 from baiji import s3
 from baiji.util import tempfile
 
-TEST_BUCKET = 'baiji-test'
+TEST_BUCKET = 'metabaiji-test'
 
 class TestAWSBase(unittest.TestCase):
     """
