@@ -416,8 +416,10 @@ class S3CopyOperation(object):
             headers['x-amz-acl'] = self.policy
         key = self.src.lookup()
         meta = key.metadata
-        meta['Content-Encoding'] = key.content_encoding
-        meta['Content-Type'] = key.content_type
+        if key.content_encoding is not None:
+            meta['Content-Encoding'] = key.content_encoding
+        if key.content_type is not None:
+            meta['Content-Type'] = key.content_type
         meta.update(self.metadata)
         self.dst.bucket.copy_key(
             self.dst.remote_path,
