@@ -252,7 +252,7 @@ class TestS3(TestAWSBase):
     def test_downloads_from_s3_are_atomic_under_truncation(self, download_mock):
         from baiji.exceptions import get_transient_error_class
         def write_fake_truncated_file(fp, **kwargs): # just capturing whatever is thrown at us: pylint: disable=unused-argument
-            fp.write("12345")
+            fp.write("12345".encode('utf-8'))
         download_mock.side_effect = write_fake_truncated_file
         # Now when the call to download the file is made, the etags won't match
         with self.assertRaises(get_transient_error_class()):
