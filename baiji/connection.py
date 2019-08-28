@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from baiji import path
 from baiji.exceptions import InvalidSchemeException, S3Exception, KeyNotFound, BucketNotFound, KeyExists
@@ -125,7 +126,7 @@ class S3Connection(object):
                     # what we can and show an error about the rest.
                     self.cp(file_from, file_to, **kwargs)
                 except KeyExists as e:
-                    print str(e)
+                    print(str(e))
 
     def cp_r(self, dir_from, dir_to, parallel=False, **kwargs):
         '''
@@ -209,7 +210,7 @@ class S3Connection(object):
                     continue
             self.rm(url)
             if not quiet:
-                print "[deleted] %s" % url
+                print("[deleted] %s" % url)
 
     def ls(self, s3prefix, return_full_urls=False, require_s3_scheme=False, shallow=False, followlinks=False, list_versions=False):
         '''
@@ -227,7 +228,7 @@ class S3Connection(object):
         returned.
 
         '''
-        import itertools
+        import six
         k = path.parse(s3prefix)
         if k.scheme == 's3':
             prefix = k.path
@@ -244,7 +245,7 @@ class S3Connection(object):
             else:
                 result_list_iterator = self._bucket(k.netloc).list(prefix=prefix, delimiter=delimiter)
 
-            return itertools.imap(clean_paths, result_list_iterator)
+            return six.moves.map(clean_paths, result_list_iterator)
         elif k.scheme == 'file':
             if require_s3_scheme:
                 raise InvalidSchemeException('URI should begin with s3://')
@@ -290,10 +291,10 @@ class S3Connection(object):
         '''
         import fnmatch
         import functools
-        import itertools
+        import six
         predicate = functools.partial(fnmatch.fnmatch, pat=prefix + pattern)
         listing = self.ls(prefix, return_full_urls=True)
-        return itertools.ifilter(predicate, listing)
+        return six.moves.filter(predicate, listing)
 
     def info(self, key_or_file):
         '''
@@ -627,10 +628,10 @@ class S3Connection(object):
             removed_file = key_or_dir_to + f
             if any([f.startswith(x) for x in do_not_delete]):
                 if progress:
-                    print "leaving alone", removed_file
+                    print("leaving alone", removed_file)
             else:
                 if progress:
-                    print "removing", removed_file
+                    print("removing", removed_file)
                 self.rm(removed_file)
 
     def get_url(self, key, ttl):
@@ -659,12 +660,12 @@ class S3Connection(object):
         k.key = _strip_initial_slashes(key.path)
         k.set_contents_from_string(s, encrypt_key=encrypt, replace=replace)
 
-    def get_string(self, key):
+    def get_string(self, key, encoding=None):
         '''
         Get string stored in S3 ``key``.
         '''
         k = path.parse(key)
-        return self._lookup(k.netloc, k.path).get_contents_as_string()
+        return self._lookup(k.netloc, k.path).get_contents_as_string(encoding=encoding)
 
     def open(self, key, mode='rb'): # pylint: disable=redefined-builtin
         '''

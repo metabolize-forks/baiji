@@ -25,9 +25,10 @@ def parse(s):
 
     '''
     import re
-    from urlparse import urlparse, ParseResult
+    import six
+    from six.moves.urllib.parse import urlparse, ParseResult
 
-    if not isinstance(s, basestring):
+    if not isinstance(s, six.string_types):
         raise ValueError("An S3 path must be a string, got %s" % s.__class__.__name__)
 
     is_windows_path = (len(s) >= 2 and s[1] == ':')
@@ -115,7 +116,7 @@ def join(base, *additions):
     result will always be normalized to os.sep.
 
     '''
-    from urlparse import urlparse, urljoin, ParseResult
+    from six.moves.urllib.parse import urlparse, urljoin, ParseResult
 
     addition = sep.join(additions)
 

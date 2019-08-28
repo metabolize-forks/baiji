@@ -66,7 +66,7 @@ class CachedFile(object):
         if path.islocal(key):
             self.should_upload_on_close = False
             self.mode = FileMode(mode, allowed_modes='arwxb+t')
-            import __builtin__
+            from six.moves import builtins
             local_path = path.parse(key).path
             if self.mode.is_output and not os.path.exists(os.path.dirname(local_path)):
                 from baiji.util.shutillib import mkdir_p
@@ -74,7 +74,7 @@ class CachedFile(object):
             try:
                 # Use os.open to catch exclusive access to the file, but use open to get a nice, useful file object
                 self.fd = os.open(local_path, self.mode.flags)
-                self.f = __builtin__.open(local_path, self.mode.mode.replace('x', 'w'))
+                self.f = builtins.open(local_path, self.mode.mode.replace('x', 'w'))
                 os.close(self.fd)
             except OSError as e:
                 import errno

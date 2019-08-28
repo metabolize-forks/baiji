@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from baiji.util.parallel import ParallelWorker
 from baiji.exceptions import InvalidSchemeException, S3Exception, KeyNotFound, KeyExists, get_transient_error_class
@@ -388,7 +389,7 @@ class S3CopyOperation(object):
 
         except (get_transient_error_class(), KeyNotFound) as retryable_error:
             # Printed here so that papertrail can alert us when this occurs
-            print retryable_error
+            print(retryable_error)
 
             # retry once or raise
             if self.retries_made < self.retries_allowed:
@@ -415,9 +416,11 @@ class S3CopyOperation(object):
             headers['x-amz-acl'] = self.policy
         key = self.src.lookup()
         meta = key.metadata
-        meta['Content-Encoding'] = key.content_encoding
-        meta['Content-Type'] = key.content_type
-        meta = dict(meta.items() + self.metadata.items())
+        if key.content_encoding is not None:
+            meta['Content-Encoding'] = key.content_encoding
+        if key.content_type is not None:
+            meta['Content-Type'] = key.content_type
+        meta.update(self.metadata)
         self.dst.bucket.copy_key(
             self.dst.remote_path,
             self.src.bucket_name,
@@ -430,7 +433,7 @@ class S3CopyOperation(object):
         )
 
         if self.progress:
-            print 'Copied %s to %s' % (self.src.uri, self.dst.uri)
+            print('Copied %s to %s' % (self.src.uri, self.dst.uri))
 
     def prep_local_destination(self):
         from baiji.util.shutillib import mkdir_p
@@ -454,9 +457,9 @@ class MultifileCopyWorker(ParallelWorker):
         try:
             self.connection.cp(file_from, file_to, **self.kwargs_for_cp)
             if self.verbose:
-                print "Finished transfering {} to {}".format(file_from, file_to)
+                print("Finished transfering {} to {}".format(file_from, file_to))
         except KeyExists as e:
             # Note here that the correct behavior would probably be to roll back
             # if we encounter an error, but that's not practical, so we copy
             # what we can and show an error about the rest.
-            print str(e)
+            print(str(e))

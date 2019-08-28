@@ -8,7 +8,7 @@ class TestCachedFile(TestAWSBase):
     def setUp(self):
         super(TestCachedFile, self).setUp()
         s3.cp(self.local_file, self.remote_file("openable"))
-        with open(self.local_file, 'rb') as f:
+        with open(self.local_file, 'r') as f:
             self.truth = f.read()
 
     def test_s3_open_read_remote_file_with_context_manager(self):

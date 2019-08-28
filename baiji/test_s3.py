@@ -2,11 +2,33 @@ import os
 import shutil
 import unittest
 import mock
-from bltest.random_data import create_random_temporary_file
 from baiji import s3
 from baiji.util import tempfile
 
-TEST_BUCKET = 'baiji-test'
+TEST_BUCKET = 'metabaiji-test'
+VERSIONED_TEST_BUCKET = 'metabaiji-test-versioned'
+
+def random_data(sz=None):
+    if sz is None:
+        sz = 30 * 80
+
+    def random_line():
+        import random
+        import string
+        return ''.join(random.choice(string.ascii_letters) for x in range(80))
+
+    return '\n'.join(random_line() for x in range(int(sz/80)))
+
+def create_random_temporary_file(sz=None):
+    '''
+    Create a temporary file with random contents, and return its path.
+    The caller is responsible for removing the file when done.
+    sz is optional and approximate
+    '''
+    from baiji.util import tempfile
+    with tempfile.NamedTemporaryFile('w', delete=False) as f:
+        f.write(random_data(sz))
+        return f.name
 
 class TestAWSBase(unittest.TestCase):
     """
@@ -58,7 +80,7 @@ class TestAWSBase(unittest.TestCase):
         self.assertFalse(self.retriable_s3_call(lambda: s3.exists(path)))
 
     def assert_is_public(self, s3_url, is_public):
-        from urlparse import urlparse
+        from six.moves.urllib.parse import urlparse
         url = urlparse(s3_url)
         acl = self.retriable_s3_call(lambda: s3.S3Connection()._bucket(url.netloc).get_acl(url.path[1:])) # pylint: disable=protected-access
         actual_is_public = False
@@ -90,7 +112,7 @@ class TestAWSBase(unittest.TestCase):
         # the remote object will be either deleted (which will be overwritten later)
         # or download to local
 
-        uri = 's3://baiji-test-versioned/FOO/A_preexisting_file.md'
+        uri = 's3://{}/FOO/A_preexisting_file.md'.format(VERSIONED_TEST_BUCKET)
 
         if not s3.exists(uri):
             s3.cp(self.local_file, uri)
@@ -139,7 +161,7 @@ class TestEtag(TestAWSBase):
     @property
     def true_md5(self):
         import hashlib
-        with open(self.local_file) as f:
+        with open(self.local_file, 'rb') as f:
             return hashlib.md5(f.read()).hexdigest()
 
     def test_etag_remote_equals_local(self):
@@ -230,7 +252,7 @@ class TestS3(TestAWSBase):
     def test_downloads_from_s3_are_atomic_under_truncation(self, download_mock):
         from baiji.exceptions import get_transient_error_class
         def write_fake_truncated_file(fp, **kwargs): # just capturing whatever is thrown at us: pylint: disable=unused-argument
-            fp.write("12345")
+            fp.write("12345".encode('utf-8'))
         download_mock.side_effect = write_fake_truncated_file
         # Now when the call to download the file is made, the etags won't match
         with self.assertRaises(get_transient_error_class()):
@@ -426,7 +448,7 @@ class TestS3(TestAWSBase):
     def test_strings(self):
         s = "TEST STRING"
         s3.put_string(self.remote_file("string"), s)
-        self.assertEqual(s3.get_string(self.remote_file("string")), s)
+        self.assertEqual(s3.get_string(self.remote_file("string"), encoding='utf-8'), s)
 
     # TODO: Test with local paths. Instead of having a single local file
     # we can have a local subdirectory that is cleaned up on teardown.

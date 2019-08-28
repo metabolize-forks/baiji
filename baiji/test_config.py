@@ -1,12 +1,12 @@
 import unittest
 import tempfile
-from test.test_support import EnvironmentVarGuard
 from baiji.config import Settings
 from baiji.exceptions import AWSCredentialsMissing
+from baiji.util.test_support import EnvironmentVarGuard
 
 class FakeConfigFile(object):
     def __init__(self, contents):
-        self.tf = tempfile.NamedTemporaryFile()
+        self.tf = tempfile.NamedTemporaryFile(mode='w+')
         self.tf.write(contents)
         self.tf.flush()
         self.path = self.tf.name
