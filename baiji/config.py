@@ -21,7 +21,7 @@ class ConfigFile(object):
 class YAMLConfigFile(ConfigFile):
     def load(self):
         from baiji.util import yaml
-        data = yaml.safe_load(self.path)
+        data = yaml.load(self.path)
         if data is None:
             return {}
         if not isinstance(data, dict):
