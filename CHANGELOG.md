@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.12.1
+
+- Update pyyaml dependency to 5.3.1.
+
+
 ## 2.12.0
 
 - Add support for Python 3.
