@@ -4,7 +4,7 @@ baiji
 [![pip install](https://img.shields.io/badge/pip%20install-metabaiji-f441b8?style=flat-square)][pypi]
 [![version](https://img.shields.io/pypi/v/metabaiji?style=flat-square)][pypi]
 [![python versions](https://img.shields.io/pypi/pyversions/metabaiji?style=flat-square)][pypi]
-[![build status](https://img.shields.io/circleci/project/github/metabolize/baiji/master.svg?style=flat-square)][circle]
+[![build status](https://img.shields.io/circleci/project/github/metabolize-forks/baiji/main?style=flat-square)][circle]
 [![last commit](https://img.shields.io/github/last-commit/metabolize/baiji?style=flat-square)][commits]
 [![open pull requests](https://img.shields.io/github/issues-pr/metabolize/baiji?style=flat-square)][pull requests]
 
@@ -29,10 +29,10 @@ The fork's goals are modest:
 It's used by related forks such as [lace][].
 
 [upstream]: https://github.com/bodylabs/baiji
-[circle]: https://circleci.com/gh/metabolize/baiji
+[circle]: https://circleci.com/gh/metabolize-forks/baiji
 [pypi]: https://pypi.org/project/metabaiji/
-[pull requests]: https://github.com/metabolize/baiji/pulls
-[commits]: https://github.com/metabolize/baiji/commits/master
+[pull requests]: https://github.com/metabolize-forks/baiji/pulls
+[commits]: https://github.com/metabolize-forks/baiji/commits/main
 [lace]: https://github.com/metabolize/lace
 
 
