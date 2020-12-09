@@ -1,7 +1,7 @@
 import os
 import shutil
 import unittest
-import mock
+from unittest import mock
 from baiji import s3
 from baiji.util import tempfile
 

@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 from baiji import s3
 from baiji.test_s3 import TestAWSBase
 
