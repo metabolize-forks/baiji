@@ -2,6 +2,12 @@
 
 ## 2.12.1
 
+- Do not automatically install the optional and unmaintained progressbar
+  dependency.
+
+
+## 2.12.1
+
 - Update pyyaml dependency to 5.3.1.
 
 
